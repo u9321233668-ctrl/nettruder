@@ -551,3 +551,7 @@ source copy, public catalog references and research citations is in
 `THIRD-PARTY-NOTICES.md`. Runtime data and the local Python environment are
 excluded by `.gitignore`; the copy-only mirror workflow never uses `robocopy
 /MIR`.
+
+NetTruder is authored and maintained by the repository owner. Development and
+documentation assistance was provided by OpenCode AI (Big Pickle model); it is
+a contributor, not the owner or author of record.

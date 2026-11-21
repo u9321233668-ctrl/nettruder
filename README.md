@@ -1,5 +1,7 @@
 # NetTruder
 
+![NetTruder defensive console](assets/nettruder-console-195257.png)
+
 Version 1.1.0. The console was called NetWatch before 1.1.0.
 
 A defensive network operations console for Windows, styled after Armitage /
@@ -22,6 +24,23 @@ For a module-by-module explanation from SWEEP to PS LOGGING, including the
 request/event architecture, the defensive review model and the manual browser
 handoff, see `HOW-IT-WORKS.md`. Licensing and third-party provenance are in
 `LICENSE` and `THIRD-PARTY-NOTICES.md`.
+
+Development assistance: OpenCode AI (Big Pickle model). NetTruder is authored
+and maintained by the repository owner; OpenCode AI assisted with development
+and documentation.
+
+## Screenshots
+
+These show the console shell with the Windows title strip and taskbar cropped
+out. Live rows and findings depend on the host and the run.
+
+![NetTruder console view 1](assets/nettruder-console-195137.png)
+
+![NetTruder console view 2](assets/nettruder-console-195233.png)
+
+![NetTruder console view 3](assets/nettruder-console-195248.png)
+
+![NetTruder console view 4](assets/nettruder-console-195257.png)
 
 ---
 
