@@ -1,0 +1,177 @@
+{
+    "version": "1.0.0",
+    "scope": "Safe source-review exercises for the local HEVD copy. No build, no driver load, no device request, no payload and no exploit chain.",
+    "beginner": [
+        {
+            "id": "B1",
+            "title": "Orient yourself in the source tree",
+            "objective": "Identify which files are driver source and which files are project metadata.",
+            "steps": [
+                "Open research/hevd-source/SOURCE-ONLY.txt.",
+                "Open research/hevd-source/README.md and read the project purpose.",
+                "List the files under Driver/HEVD/Windows/ and note the .c and .h pairs.",
+                "Confirm that no upstream Exploit, Builder or installer Tools folder exists; the lowercase tools folder holds only the NetTruder helper."
+            ],
+            "evidence": "A short note naming three source files and the safety boundary.",
+            "mitigation": "Keeping exploit sources out of the lab copy makes the audit read-only by construction."
+        },
+        {
+            "id": "B2",
+            "title": "Run the first Code Audit",
+            "objective": "Use NetTruder Code Audit on the HEVD source without executing anything.",
+            "steps": [
+                "Open the CODE AUDIT module.",
+                "Press HEVD SOURCE to fill the path and start the read-only scan.",
+                "Wait for FILES WITH HITS and FINDINGS to populate.",
+                "Select a file with hits and read the masked source with line numbers."
+            ],
+            "evidence": "The finding count and one masked snippet copied to your notes.",
+            "mitigation": "Code Audit reads text only; no project is built and no driver is loaded."
+        },
+        {
+            "id": "B3",
+            "title": "Read one dangerous API finding",
+            "objective": "Understand why a copy API is flagged without claiming exploitability.",
+            "steps": [
+                "Open a finding with rule NT-C-DANGEROUS-COPY.",
+                "Read the masked line and the surrounding numbered source.",
+                "Write down what the destination size is and where it comes from.",
+                "Write a safe replacement using a bounded copy API."
+            ],
+            "evidence": "A two-sentence defensive finding: risk, then fix.",
+            "mitigation": "Bounded copies and length checks remove the class of bug being studied."
+        },
+        {
+            "id": "B4",
+            "title": "Send findings to RESEARCH",
+            "objective": "Move masked Code Audit results into the RESEARCH module.",
+            "steps": [
+                "Complete at least one Code Audit run.",
+                "Press SEND TO RESEARCH in the CODE AUDIT module.",
+                "Confirm the view switches to RESEARCH and FINDINGS increases.",
+                "Open one transferred finding and read its control and fix text."
+            ],
+            "evidence": "The RESEARCH finding count before and after the transfer.",
+            "mitigation": "The bridge carries masked text only; raw source is never sent."
+        },
+        {
+            "id": "B5",
+            "title": "Map a bug class to a catalog entry",
+            "objective": "Connect one Code Audit rule to a HEVD catalog study entry.",
+            "steps": [
+                "Open RESEARCH and filter the group to Kernel Source Review.",
+                "Find the entry that matches your finding, such as HEVD-COPY or HEVD-POOL.",
+                "Read DETECTION, HARDENING and EVENT CHAIN.",
+                "Record one control that reduces exposure to that bug class."
+            ],
+            "evidence": "A note with rule ID, catalog ID, and one defensive control.",
+            "mitigation": "Mapping findings to controls turns a code smell into an actionable review item."
+        },
+        {
+            "id": "B6",
+            "title": "Use the lab helper",
+            "objective": "Generate a study guide and validate the local catalogs from the venv.",
+            "steps": [
+                "Open a terminal in research/hevd-source.",
+                "Run .venv\\Scripts\\python.exe tools\\hevd_lab.py check.",
+                "Run the same command with guide --level beginner.",
+                "Run findings to summarize the last Code Audit bridge file."
+            ],
+            "evidence": "CHECK OK plus the generated guide heading.",
+            "mitigation": "The helper reads local JSON and text only."
+        },
+        {
+            "id": "B7",
+            "title": "Read a wrapped-size finding",
+            "objective": "Explain why arithmetic inside a bound check can make the check pass.",
+            "steps": [
+                "Open HEVD-INT in RESEARCH and read DETECTION and HARDENING.",
+                "Run HEVD SOURCE in Code Audit and find an NT-C-INT-WRAP finding.",
+                "Read the masked line and name the arithmetic that feeds the comparison.",
+                "Write the checked-arithmetic fix and the maximum-size guard in your notes."
+            ],
+            "evidence": "A short note with the rule ID, the arithmetic operation, and the documented fix.",
+            "mitigation": "Checked arithmetic and a documented maximum stop a wrapped value from passing a bound check."
+        }
+    ],
+    "advanced": [
+        {
+            "id": "A1",
+            "title": "Build a data-flow review sheet",
+            "objective": "Trace caller-controlled length values from the dispatch entry to the final copy.",
+            "steps": [
+                "Open HEVD-IOCTL and HEVD-COPY in RESEARCH.",
+                "Mark each function in the path from dispatch to copy in your notes.",
+                "Record every length check and every arithmetic operation on that path.",
+                "Write a review sheet with source, bound, and destination capacity columns."
+            ],
+            "evidence": "A table with three or more functions and one defensive conclusion.",
+            "mitigation": "A complete data-flow sheet makes missing bounds visible without dynamic testing."
+        },
+        {
+            "id": "A2",
+            "title": "Audit allocation size arithmetic",
+            "objective": "Review size calculations that feed kernel allocations.",
+            "steps": [
+                "Open HEVD-POOL and HEVD-INT in RESEARCH.",
+                "Find an allocation size expression in the Windows source files.",
+                "Write the maximum possible value for each input using the documented types.",
+                "Propose a checked-arithmetic replacement and a maximum-size constant."
+            ],
+            "evidence": "A written range analysis and the proposed guard.",
+            "mitigation": "Checked arithmetic prevents undersized allocations before they happen."
+        },
+        {
+            "id": "A3",
+            "title": "Review object ownership",
+            "objective": "Map allocation and free paths for one vulnerable-study object.",
+            "steps": [
+                "Open HEVD-UAF in RESEARCH.",
+                "Mark allocation, reference, free and pointer-clear lines in the masked source view.",
+                "Write the single-owner rule that the code should follow.",
+                "Note one telemetry source that would show abnormal driver instability in a lab."
+            ],
+            "evidence": "An ownership diagram in text form with four labelled steps.",
+            "mitigation": "Reference counting and pointer clearing remove the lifetime ambiguity."
+        },
+        {
+            "id": "A4",
+            "title": "Review the user-pointer boundary",
+            "objective": "Document the safe order for probe, copy, and validation.",
+            "steps": [
+                "Open HEVD-PTR in RESEARCH.",
+                "Find a source file that accepts a caller-supplied pointer or buffer.",
+                "Record where probe, copy, exception handling and validation occur.",
+                "Write the single-snapshot pattern that should be used instead."
+            ],
+            "evidence": "An ordered four-step defensive pattern.",
+            "mitigation": "Copying user data once into kernel-owned memory removes time-of-check gaps."
+        },
+        {
+            "id": "A5",
+            "title": "Write a custom Code Audit rule",
+            "objective": "Add a defensive static rule for a bug class you studied.",
+            "steps": [
+                "Pick one bug class from hevd-catalog.json.",
+                "Draft a regular expression that flags a narrow code pattern, not a whole file.",
+                "Add a rule with id NT-C-CUSTOM, severity, why, fix and a research tag.",
+                "Re-run Code Audit and verify the rule produces readable masked findings."
+            ],
+            "evidence": "The rule text and one example finding title.",
+            "mitigation": "Narrow, explainable rules reduce noise and keep the audit useful."
+        },
+        {
+            "id": "A6",
+            "title": "Produce a defensive research note",
+            "objective": "Turn a set of findings into a beginner-friendly and advanced research note.",
+            "steps": [
+                "Run the helper with guide --level all and save the output.",
+                "Select three Code Audit findings and transfer them to RESEARCH.",
+                "Write a short note with overview, evidence, controls, and limits.",
+                "State explicitly that no exploit was built, loaded or executed."
+            ],
+            "evidence": "A Markdown note with four sections and a safety statement.",
+            "mitigation": "Documenting evidence limits stops a source finding from being overstated."
+        }
+    ]
+}

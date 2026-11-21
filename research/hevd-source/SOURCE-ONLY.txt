@@ -1,0 +1,23 @@
+HEVD SOURCE-ONLY STUDY COPY
+===========================
+
+This folder is a trimmed copy of the public HackSysExtremeVulnerableDriver
+repository. Only driver source, headers, project metadata, license and upstream
+README files are retained.
+
+Removed from the local copy:
+
+- Exploit/ (upstream exploit sources and payload code)
+- Builder/ (upstream build and install helpers)
+- Tools/ (upstream installer and test helpers)
+- Screenshots/ and Whitepaper/ (presentation material)
+- Driver/HEVD/Windows/HEVD.pfx (test signing certificate)
+- .git metadata
+
+The lowercase tools/ folder in this copy is new and contains only
+tools/hevd_lab.py, a standard-library reporting helper written for NetTruder.
+It does not build, install or execute any driver code.
+
+NetTruder never builds, loads, signs or installs this driver. No IOCTL is sent
+and no code from this folder is executed. Code Audit reads these files as text
+and produces masked, read-only findings for defensive study.

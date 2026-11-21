@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta charset="utf-8" />
+<title>NETTRUDER // OPS CONSOLE</title>
+<hta:application id="htaApp"
+    applicationname="NetTruder"
+    border="thin"
+    caption="yes"
+    maximizebutton="yes"
+    minimizebutton="yes"
+    scroll="no"
+    singleinstance="yes"
+    sysmenu="yes"
+    windowstate="normal" />
+<link rel="stylesheet" type="text/css" href="ui/style.css" />
+<script language="JScript" src="ui/app.js"></script>
+</head>
+<body>
+<div id="scanlines"></div>
+<div id="shell">
+
+  <header id="topbar">
+    <div class="brand">
+      <span class="brandmark"></span>
+      <span class="brandtext">NETTRUDER</span>
+      <span class="brandsub">OPERATIONS CONSOLE</span>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chipEngine"><i class="led"></i><b>ENGINE</b><span id="chipEngineTxt">IDLE</span></span>
+      <span class="chip" id="chipMonitor"><i class="led"></i><b>IDS</b><span id="chipMonitorTxt">STANDBY</span></span>
+      <span class="chip" id="chipIps"><i class="led"></i><b>IPS</b><span id="chipIpsTxt">DISARMED</span></span>
+    </div>
+    <div class="topright">
+      <button id="btnHelp" class="helpbtn" type="button" title="Open the guided tour and onboarding">GUIDE</button>
+      <span class="clock" id="clock">--:--:--</span>
+      <span class="badge" id="adminBadge">USER</span>
+    </div>
+  </header>
+
+  <div id="main">
+    <nav id="rail">
+      <div class="railnav">
+        <div class="railhead">MODULES</div>
+        <button class="nav active" data-view="sweep"><span class="navi">01</span><span class="navt">SWEEP</span></button>
+        <button class="nav" data-view="flow"><span class="navi">02</span><span class="navt">PROCESS FLOW</span></button>
+        <button class="nav" data-view="web"><span class="navi">03</span><span class="navt">WEB RISK</span></button>
+        <button class="nav" data-view="code"><span class="navi">04</span><span class="navt">CODE AUDIT</span></button>
+        <button class="nav" data-view="threats"><span class="navi">05</span><span class="navt">THREATS</span></button>
+        <button class="nav" data-view="triage"><span class="navi">06</span><span class="navt">TRIAGE</span></button>
+        <button class="nav" data-view="av"><span class="navi">07</span><span class="navt">EXPOSURE</span></button>
+        <button class="nav" data-view="data"><span class="navi">08</span><span class="navt">DATA</span></button>
+        <button class="nav" data-view="ids"><span class="navi">09</span><span class="navt">IDS / IPS</span></button>
+        <button class="nav" data-view="terminal"><span class="navi">10</span><span class="navt">TERMINAL</span></button>
+        <button class="nav" data-view="posture"><span class="navi">11</span><span class="navt">POSTURE</span></button>
+        <button class="nav" data-view="processes"><span class="navi">12</span><span class="navt">PROCESSES</span></button>
+        <button class="nav" data-view="audit"><span class="navi">13</span><span class="navt">AUDIT</span></button>
+        <button class="nav" data-view="research"><span class="navi">14</span><span class="navt">RESEARCH</span></button>
+        <button class="nav" data-view="network"><span class="navi">15</span><span class="navt">NETWORK</span></button>
+        <button class="nav" data-view="pslog"><span class="navi">16</span><span class="navt">PS LOGGING</span></button>
+      </div>
+      <div class="railblock">
+        <div class="railk">SCOPE</div>
+        <div class="railv">RFC1918 GUARD</div>
+        <div class="railk">RESPONSE</div>
+        <div class="railv">REVERSIBLE</div>
+        <div class="railk">TELEMETRY</div>
+        <div class="railv">NONE</div>
+      </div>
+      <div class="railfoot">v1.1.0 // LOCAL OPS</div>
+    </nav>
+
+    <section id="work">
+
+      <!-- ============================ SWEEP ============================ -->
+      <div class="view active" id="view-sweep">
+        <div class="card">
+          <div class="cardhead"><span>TARGET SET</span><span class="micro accent">PRIVATE-RANGE GUARD ACTIVE</span></div>
+          <div class="cardbody row">
+            <div class="field grow">
+              <label>Targets</label>
+              <div class="inputrow">
+                <input id="targets" type="text" spellcheck="false" placeholder="192.168.1.0/24" />
+                <button id="btnLocal" class="mini">LOCAL SUBNET</button>
+                <button id="btnGateway" class="mini">GATEWAY</button>
+              </div>
+              <div class="hint">Accepts CIDR (/22-/32), a-b octet range, single IP, or hostname.</div>
+            </div>
+            <div class="field">
+              <label>Port profile</label>
+              <select id="profile">
+                <option value="common">common (28)</option>
+                <option value="web">web</option>
+                <option value="remote">remote access</option>
+                <option value="db">database</option>
+                <option value="mail">mail</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Timeout</label>
+              <select id="timeout">
+                <option value="400">400 ms</option>
+                <option value="700" selected>700 ms</option>
+                <option value="1200">1200 ms</option>
+                <option value="2000">2000 ms</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="row actions">
+          <button id="btnSweep" class="btn primary">RUN SWEEP</button>
+          <button id="btnProbeTop" class="btn">POSTURE PROBE</button>
+          <button id="btnAbort" class="btn danger">ABORT</button>
+          <div class="grow"></div>
+          <div class="bar"><div id="bar"></div></div>
+          <span class="micro" id="barLabel">IDLE</span>
+        </div>
+
+        <div class="card grow scroll">
+          <table id="hostTable">
+            <thead>
+              <tr><th class="w-host">HOST</th><th class="w-mac">MAC</th><th class="w-rtt">LATENCY</th><th>OPEN PORTS</th><th class="w-risk">RISK</th></tr>
+            </thead>
+            <tbody id="hostBody"></tbody>
+          </table>
+          <div class="empty" id="hostEmpty">NO HOSTS YET // SET TARGETS AND RUN SWEEP</div>
+        </div>
+
+        <div class="card detail" id="hostDetail"><span class="micro">SELECT A HOST ROW FOR DETAIL</span></div>
+      </div>
+
+      <!-- ============================ IDS / IPS ============================ -->
+      <div class="view" id="view-ids">
+        <div class="row actions">
+          <button id="btnWatch" class="btn primary">ARM IDS</button>
+          <button id="btnWatchStop" class="btn danger">DISARM</button>
+          <button id="btnIdsTaskMgr" class="mini">TASK MANAGER</button>
+          <button id="btnIdsFirewall" class="mini">FIREWALL</button>
+          <label class="toggle"><input type="checkbox" id="chkAutoBlock" /><span>AUTO-BLOCK HIGH (PUBLIC IPs ONLY, 10 MIN)</span></label>
+          <div class="grow"></div>
+          <span class="micro" id="watchState">STANDBY</span>
+        </div>
+
+        <div class="split">
+          <div class="card grow">
+            <div class="cardhead"><span>ALERT STREAM</span><span class="micro" id="alertCount">0 EVENTS</span></div>
+            <div class="scroll" id="alertScroll">
+              <div id="alertList" class="alertlist"></div>
+              <div class="empty" id="alertEmpty">NO ALERTS // ARM THE IDS TO START MONITORING</div>
+            </div>
+          </div>
+
+          <div class="card narrow">
+            <div class="cardhead"><span>RESPONSE</span><span class="micro">HOST FIREWALL</span></div>
+            <div class="scroll pad" id="blockScroll">
+              <div id="blockList" class="blocklist"></div>
+              <div class="empty small" id="blockEmpty">NO ACTIVE BLOCKS</div>
+              <button id="btnRelease" class="btn danger small wide">RELEASE ALL</button>
+              <button id="btnBlockFirewall" class="btn small wide">FIREWALL CONSOLE</button>
+              <div class="hint">Rules are named <b>NetTruder-IPS-*</b> and carry an expiry. Nothing else in the firewall is touched.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================= PROCESS FLOW ========================= -->
+      <div class="view" id="view-flow">
+        <div class="row actions">
+          <button id="btnFlowRun" class="btn primary">RUN FLOW MAP</button>
+          <button id="btnFlowTaskMgr" class="mini">TASK MANAGER</button>
+          <button id="btnFlowFirewall" class="mini">FIREWALL</button>
+          <button id="btnFlowLegend" class="mini">HOW TO READ</button>
+          <div class="grow"></div>
+          <input id="flowFilter" class="procsearch" type="text" spellcheck="false" placeholder="filter pid / process / path" />
+          <span class="micro" id="flowState">NO DATA</span>
+        </div>
+        <div class="split grow">
+          <div class="card grow">
+            <div class="cardhead"><span>PROCESS TREE / DATA FLOW</span><span class="micro" id="flowCount">0 NODES</span></div>
+            <div class="flowwrap" id="flowWrap">
+              <div class="empty" id="flowEmpty">RUN THE FLOW MAP // PROCESSES, PARENTS AND REMOTE ENDPOINTS</div>
+              <div id="flowSvg"></div>
+            </div>
+            <div class="flowlegend">
+              <span class="fl proc">PROCESS</span>
+              <span class="fl spawn">SPAWN</span>
+              <span class="fl remote">REMOTE</span>
+              <span class="fl high">HIGH</span>
+              <span class="fl med">MED</span>
+              <span class="fl low">LOW</span>
+              <span class="fl note">Left to right: parent to child, then process to endpoint. Click a node or a finding.</span>
+            </div>
+          </div>
+          <div class="card flowside">
+            <div class="cardhead"><span>FINDINGS</span><span class="micro" id="flowFindCount">0</span></div>
+            <div class="scroll pad" id="flowFindings">
+              <div class="empty small" id="flowFindEmpty">NO FINDINGS // RUN THE FLOW MAP</div>
+            </div>
+            <div class="cardhead"><span>SELECTED NODE</span></div>
+            <div class="scroll pad" id="flowDetail">
+              <div class="empty small">CLICK A NODE IN THE GRAPH</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================ WEB RISK ========================== -->
+      <div class="view" id="view-web">
+        <div class="row actions">
+          <input id="webUrl" class="urlinput" type="text" spellcheck="false" placeholder="http://127.0.0.1:8080 or https://intranet.local" />
+          <button id="btnWebRun" class="btn primary">PASSIVE CHECK</button>
+          <label class="toggle"><input type="checkbox" id="chkWebPublic" /><span>ALLOW PUBLIC HOST</span></label>
+          <button id="btnWebZap" class="mini">ZAP RECIPE</button>
+          <div class="grow"></div>
+          <span class="micro" id="webState">NO DATA</span>
+        </div>
+        <div class="card ressumm" id="webSumm">
+          <span class="rsum dim">PASSIVE ONLY // HEADERS, TLS, COOKIES, FORMS, COMMENTS, PATHS</span>
+        </div>
+        <div class="split grow">
+          <div class="card grow">
+            <div class="cardhead"><span>TARGETS</span><span class="micro" id="webCount">0</span></div>
+            <div class="scroll pad" id="webPages">
+              <div class="empty small" id="webEmpty">NO WEB CHECK YET // ENTER A LOOPBACK OR PRIVATE URL</div>
+            </div>
+          </div>
+          <div class="card webside">
+            <div class="cardhead"><span>FINDINGS</span><span class="micro" id="webFindCount">0</span></div>
+            <div class="scroll pad" id="webFindings">
+              <div class="empty small" id="webFindEmpty">NO WEB FINDINGS</div>
+            </div>
+          </div>
+        </div>
+        <div class="card webflowcard">
+          <div class="cardhead"><span>SITE DATA FLOW</span><span class="micro">INFERRED FROM THE RESPONSE</span></div>
+          <div class="webflow" id="webFlow"><span class="wfempty">RUN A CHECK TO DRAW THE PATH</span></div>
+          <div class="hint" id="webFlowNote">Client, transport, application, data and logs. The data store is not visible passively; the row is an inference, not a measurement.</div>
+        </div>
+        <div class="card siteimpcard">
+          <div class="cardhead"><span>EXTENSION REPORT IMPORT</span><span class="micro" id="siteImportState">NO DATA</span></div>
+          <div class="siteimpbody">
+            <textarea id="siteReportText" class="sitereport" spellcheck="false" placeholder="Paste the redacted NetTruder Site Posture report here"></textarea>
+            <div class="siteimpbtns">
+              <button id="btnSiteImport" class="btn small primary">IMPORT REPORT</button>
+              <button id="btnSiteGuide" class="mini">HOW TO READ</button>
+              <button id="btnSiteClear" class="mini">CLEAR</button>
+              <span class="micro">MANUAL PASTE // IN-MEMORY ONLY // NO FILE / NETWORK / PROFILE READ</span>
+            </div>
+            <div class="siteimpsumm" id="siteImportSumm"><span class="rsum dim">NO REPORT IMPORTED // INDICATORS ONLY</span></div>
+            <div class="siteimports" id="siteImportRows">
+              <div class="empty small" id="siteImportEmpty">IMPORT A REDACTED EXTENSION REPORT TO REVIEW STATE AND REMEDIATION</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================== CODE AUDIT ========================= -->
+      <div class="view" id="view-code">
+        <div class="row actions">
+          <input id="codePath" class="urlinput" type="text" spellcheck="false" placeholder="project folder to review" />
+          <button id="btnCodeRun" class="btn primary">RUN CODE AUDIT</button>
+          <button id="btnCodeFolder" class="mini">OPEN FOLDER</button>
+          <div class="grow"></div>
+          <span class="micro" id="codeState">NO DATA</span>
+        </div>
+        <div class="row actions codefilters">
+          <button id="btnHevdAudit" class="mini">HEVD SOURCE</button>
+          <button id="btnHevdGuide" class="mini">HEVD GUIDE</button>
+          <button id="btnHevdReview" class="mini">KERNEL REVIEW</button>
+          <button id="btnKernelDbg" class="mini">KERNEL DBG</button>
+          <button id="btnIntWrap" class="mini">INT WRAP</button>
+          <button id="btnCodeToResearch" class="mini">SEND TO RESEARCH</button>
+          <div class="grow"></div>
+          <span class="micro">SOURCE-ONLY / NO DRIVER LOAD / NO LIVE DEBUG</span>
+        </div>
+        <div class="row actions codefilters">
+          <select id="codeSev" title="severity filter">
+            <option value="">ALL SEVERITIES</option>
+            <option value="high">HIGH</option>
+            <option value="med">MEDIUM</option>
+            <option value="low">LOW</option>
+            <option value="info">INFO</option>
+          </select>
+          <input id="codeSearch" class="procsearch" type="text" spellcheck="false" placeholder="filter rule, file, title, CWE, fix" />
+          <select id="codeSort" title="sort findings">
+            <option value="sev">SORT: SEVERITY</option>
+            <option value="file">SORT: FILE</option>
+            <option value="rule">SORT: RULE</option>
+            <option value="line">SORT: LINE</option>
+          </select>
+          <button id="btnCodeExport" class="mini">EXPORT REPORT</button>
+          <button id="btnCodeExternal" class="mini">OPEN FILE</button>
+          <div class="grow"></div>
+          <button id="btnCodeWriteMode" class="mini">WRITE MODE OFF</button>
+          <span class="micro" id="codeWriteState">REVIEW ONLY</span>
+        </div>
+        <div class="card ressumm" id="codeSumm">
+          <span class="rsum dim">STATIC REVIEW // FILES ARE READ, NEVER EXECUTED</span>
+        </div>
+        <div class="split grow">
+          <div class="card grow">
+            <div class="cardhead"><span>FILES WITH HITS</span><span class="micro" id="codeCount">0</span></div>
+            <div class="scroll" id="codeFiles">
+              <div class="empty small" id="codeEmpty">RUN THE AUDIT TO LIST FILES WITH FINDINGS</div>
+            </div>
+          </div>
+          <div class="card codeside">
+            <div class="cardhead"><span>FINDINGS</span><span class="micro" id="codeFindCount">0</span></div>
+            <div class="scroll pad" id="codeFindings">
+              <div class="empty small" id="codeFindEmpty">NO CODE FINDINGS</div>
+            </div>
+          </div>
+        </div>
+        <div class="card detail scrolldetail" id="codeDetail"><div class="ideempty">SELECT A FILE WITH HITS OR A FINDING TO OPEN THE SOURCE VIEW</div></div>
+      </div>
+
+      <!-- ============================ THREATS =========================== -->
+      <div class="view" id="view-threats">
+        <div class="row actions">
+          <button id="btnInvRun" class="btn primary">RUN INVESTIGATION</button>
+          <button id="btnInvTaskMgr" class="mini">TASK MANAGER</button>
+          <button id="btnInvFirewall" class="mini">FIREWALL</button>
+          <div class="grow"></div>
+          <input id="invFilter" class="procsearch" type="text" spellcheck="false" placeholder="filter peer / process / port" />
+          <span class="micro" id="invState">NO DATA</span>
+        </div>
+        <div class="split grow">
+          <div class="card grow">
+            <div class="cardhead"><span>PEERS</span><span class="micro" id="invCount">0</span></div>
+            <div class="scroll" id="invPeers">
+              <table id="invTable">
+                <thead><tr><th class="w-invip">PEER</th><th class="w-invscope">SCOPE</th><th class="w-invconn">FLOWS</th><th>PORTS</th><th>PROCESSES</th></tr></thead>
+                <tbody id="invBody"></tbody>
+              </table>
+              <div class="empty small" id="invEmpty">RUN THE INVESTIGATION TO MAP LIVE PEERS</div>
+            </div>
+          </div>
+          <div class="card invside">
+            <div class="cardhead"><span>FINDINGS</span><span class="micro" id="invFindCount">0</span></div>
+            <div class="scroll pad" id="invFindings">
+              <div class="empty small" id="invFindEmpty">NO THREAT FINDINGS</div>
+            </div>
+          </div>
+        </div>
+        <div class="card listenerscard">
+          <div class="cardhead"><span>LISTENERS</span><span class="micro" id="invListenCount">0</span></div>
+          <div class="scroll pad" id="invListen">
+            <div class="empty small">RUN THE INVESTIGATION TO LIST LISTENING PORTS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================ TRIAGE ============================ -->
+      <div class="view" id="view-triage">
+        <div class="row actions">
+          <input id="triagePath" class="urlinput" type="text" spellcheck="false" placeholder="alert export file or folder (Alertmanager JSON / NDJSON)" />
+          <button id="btnTriageRun" class="btn primary">BUILD BOARD</button>
+          <button id="btnTriageFolder" class="mini">DATA FOLDER</button>
+          <div class="grow"></div>
+          <span class="micro" id="triageState">NO DATA</span>
+        </div>
+        <div class="card ressumm" id="triageSumm">
+          <span class="rsum dim">LOCAL BOARD // DECISIONS ARE RECORDED HERE, NEVER PUSHED UPSTREAM</span>
+        </div>
+        <div class="split grow">
+          <div class="card grow">
+            <div class="cardhead"><span>PRIORITISED BOARD</span><span class="micro" id="triageCount">0</span></div>
+            <div class="scroll pad" id="triageBoard">
+              <div class="empty small" id="triageEmpty">NO ALERT EXPORT // DROP triage-*.json IN THE NETTRUDER DATA FOLDER</div>
+            </div>
+          </div>
+          <div class="card triageside">
+            <div class="cardhead"><span>PLAN</span><span class="micro">DEDUPE / STALE / RUNBOOK</span></div>
+            <div class="scroll pad" id="triagePlan">
+              <div class="empty small">RUN THE BOARD TO BUILD A PLAN</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================== EXPOSURE =========================== -->
+      <div class="view" id="view-av">
+        <div class="row actions">
+          <button id="btnAvRun" class="btn primary">BLOCK REVIEW</button>
+          <button id="btnAvRegister" class="mini">BLOCK REGISTER</button>
+          <button id="btnAvTaskMgr" class="mini">TASK MANAGER</button>
+          <button id="btnAvFirewall" class="mini">FIREWALL</button>
+          <div class="grow"></div>
+          <span class="micro" id="avState">NO DATA</span>
+        </div>
+        <div class="card ressumm" id="avSumm">
+          <span class="rsum dim">A BLOCK IS A CONTROL SUCCESS // NETTRUDER NEVER RE-RUNS IT OR TRIES A BYPASS</span>
+        </div>
+        <div class="split grow">
+          <div class="card grow">
+            <div class="cardhead"><span>BLOCKED / DETECTED EXECUTIONS</span><span class="micro" id="avEventCount">0</span></div>
+            <div class="scroll pad" id="avEvents">
+              <div class="empty small" id="avEventEmpty">NO READABLE BLOCK EVENTS // RUN THE REVIEW</div>
+            </div>
+          </div>
+          <div class="card avside">
+            <div class="cardhead"><span>PRODUCTS</span><span class="micro" id="avProductCount">0</span></div>
+            <div class="scroll pad products" id="avProducts">
+              <div class="empty small">NO PRODUCT DATA</div>
+            </div>
+            <div class="cardhead"><span>NOTES AND GAPS</span><span class="micro" id="avGapCount">0</span></div>
+            <div class="scroll pad" id="avGaps">
+              <div class="empty small">NO GAPS RECORDED</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================= DATA ============================= -->
+      <div class="view" id="view-data">
+        <div class="row actions">
+          <input id="dataPath" class="urlinput" type="text" spellcheck="false" placeholder="folder to classify (default: NetTruder data root)" />
+          <button id="btnDataRun" class="btn primary">DATA CHECK</button>
+          <select id="dataRetention" class="ressel">
+            <option value="7">7 days</option>
+            <option value="30" selected>30 days</option>
+            <option value="90">90 days</option>
+            <option value="365">365 days</option>
+          </select>
+          <label class="toggle"><input type="checkbox" id="chkDataAudit" /><span>INCLUDE AUDIT IN PURGE</span></label>
+          <button id="btnDataPreview" class="mini">PREVIEW PURGE</button>
+          <button id="btnDataPurge" class="mini danger">PURGE OLD DATA</button>
+          <div class="grow"></div>
+          <span class="micro" id="dataState">NO DATA</span>
+        </div>
+        <div class="card ressumm" id="dataSumm">
+          <span class="rsum dim">READ-ONLY CLASSIFICATION // PATTERN HITS ARE REVIEW TRIGGERS, NOT A BREACH VERDICT</span>
+        </div>
+        <div class="split grow">
+          <div class="card grow">
+            <div class="cardhead"><span>CATEGORIES AND LARGEST FILES</span><span class="micro" id="dataCount">0</span></div>
+            <div class="scroll pad" id="dataFiles">
+              <div class="empty small" id="dataEmpty">RUN THE DATA CHECK</div>
+            </div>
+          </div>
+          <div class="card dataside">
+            <div class="cardhead"><span>FINDINGS</span><span class="micro" id="dataFindCount">0</span></div>
+            <div class="scroll pad" id="dataFindings">
+              <div class="empty small" id="dataFindEmpty">NO DATA FINDINGS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================ TERMINAL ============================ -->
+      <div class="view" id="view-terminal">
+        <div class="row actions">
+          <span class="tag">LOCAL CMD</span>
+          <span class="micro">EVERY COMMAND LINE IS AUDIT-LOGGED</span>
+          <div class="grow"></div>
+          <span class="micro" id="termCwd">%USERPROFILE%</span>
+        </div>
+
+        <div class="termbar">
+          <button id="btnTermWrap" class="tgl on" title="Wrap long lines inside the pane">WRAP</button>
+          <button id="btnTermFollow" class="tgl on" title="Auto-scroll to the newest output">FOLLOW</button>
+          <button id="btnTermPause" class="tgl" title="Hold new output so the current view stays still">PAUSE</button>
+          <button id="btnTermCompact" class="tgl" title="Tighter line spacing for long write-outs">COMPACT</button>
+          <button id="btnTermClear" class="tgl act" title="Clear the window">CLEAR</button>
+          <div class="grow"></div>
+          <span class="termhold" id="termHold">LIVE</span>
+          <span class="micro" id="termLines">0 LINES</span>
+        </div>
+
+        <div class="term wrap" id="term"></div>
+
+        <div class="terminput">
+          <span class="prompt" id="termPrompt">C:\&gt;</span>
+          <input id="termInput" type="text" spellcheck="false" autocomplete="off" />
+          <button id="btnTermRun" class="mini primary">EXEC</button>
+          <button id="btnTermKill" class="mini danger">KILL</button>
+        </div>
+
+        <div class="quick">
+          <span class="micro">QUICK</span>
+          <button class="chipbtn" data-cmd="ipconfig /all">ipconfig /all</button>
+          <button class="chipbtn" data-cmd="arp -a">arp -a</button>
+          <button class="chipbtn" data-cmd="netstat -ano">netstat -ano</button>
+          <button class="chipbtn" data-cmd="tasklist /v">tasklist /v</button>
+          <button class="chipbtn" data-cmd="tasklist /svc">tasklist /svc</button>
+          <button class="chipbtn" data-cmd="route print">route print</button>
+          <button class="chipbtn" data-cmd="whoami /all">whoami /all</button>
+          <button class="chipbtn" data-cmd="systeminfo">systeminfo</button>
+          <button class="chipbtn" data-cmd="net share">net share</button>
+          <button class="chipbtn" data-cmd="net use">net use</button>
+        </div>
+      </div>
+
+      <!-- ============================ POSTURE ============================ -->
+      <div class="view" id="view-posture">
+        <div class="row actions">
+          <button id="btnProbe" class="btn primary">RUN POSTURE PROBE</button>
+          <button id="btnPostTaskMgr" class="mini">TASK MANAGER</button>
+          <button id="btnPostFirewall" class="mini">FIREWALL</button>
+          <span class="micro" id="postureState">STANDBY</span>
+          <div class="grow"></div>
+          <span class="micro">READ-ONLY CHECKS // NOTHING IS MODIFIED</span>
+        </div>
+        <div class="card grow scroll pad">
+          <div id="postureList"></div>
+          <div class="empty" id="postureEmpty">NO DATA // RUN THE PROBE</div>
+        </div>
+      </div>
+
+      <!-- =========================== PROCESSES ========================== -->
+      <div class="view" id="view-processes">
+        <div class="row actions">
+          <button id="btnProcRefresh" class="btn primary">REFRESH</button>
+          <button id="btnProcTaskMgr" class="mini">TASK MANAGER</button>
+          <button id="btnProcResMon" class="mini">RESOURCE MONITOR</button>
+          <button id="btnProcServices" class="mini">SERVICES</button>
+          <button id="btnProcFirewall" class="mini">FIREWALL</button>
+          <div class="grow"></div>
+          <input id="procFilter" class="procsearch" type="text" spellcheck="false" placeholder="filter pid / name / port" />
+          <span class="micro" id="procState">NO DATA</span>
+        </div>
+        <div class="card grow scroll">
+          <table id="procTable">
+            <thead>
+              <tr><th class="w-pid">PID</th><th>PROCESS</th><th>USER</th><th class="w-cpu">CPU</th><th class="w-mem">MEM</th><th class="w-listen">LISTENING</th><th class="w-procact">ACTIONS</th></tr>
+            </thead>
+            <tbody id="procBody"></tbody>
+          </table>
+          <div class="empty" id="procEmpty">NO PROCESS DATA // REFRESH TO COLLECT</div>
+        </div>
+        <div class="card detail" id="procDetail"><span class="micro">SELECT A PROCESS ROW FOR DETAIL</span></div>
+      </div>
+
+      <!-- ============================ AUDIT ============================ -->
+      <div class="view" id="view-audit">
+        <div class="row actions">
+          <select id="auditFile"></select>
+          <button id="btnAuditLoad" class="mini">LOAD</button>
+          <button id="btnAuditRefresh" class="mini">REFRESH LIST</button>
+          <button id="btnAuditOpen" class="mini">OPEN FOLDER</button>
+          <div class="grow"></div>
+          <span class="micro" id="auditMeta"></span>
+        </div>
+        <div class="term" id="auditOut"></div>
+      </div>
+
+      <!-- =========================== RESEARCH =========================== -->
+      <div class="view" id="view-research">
+        <div class="row actions">
+          <button id="btnResearchRun" class="btn primary">RUN INVENTORY</button>
+          <button id="btnResearchProbes" class="btn">MARKER PROBES</button>
+          <button id="btnResearchBlocks" class="mini">BLOCKS</button>
+          <button id="btnResearchReports" class="mini">REPORTS</button>
+          <button id="btnResearchFolder" class="mini">LAB FOLDER</button>
+          <select id="resGroup" class="ressel" title="Filter techniques by group"><option value="">ALL GROUPS</option></select>
+          <select id="resPlatform" class="ressel" title="Filter techniques by platform"><option value="">ALL PLATFORMS</option></select>
+          <div class="grow"></div>
+          <span class="micro" id="researchState">STANDBY</span>
+        </div>
+
+        <div class="card ressumm" id="resSumm">
+          <span class="rsum dim">NO INVENTORY RUN // READ-ONLY LAB</span>
+        </div>
+
+        <div class="split grow">
+          <div class="card grow scroll">
+            <div class="cardhead"><span>TECHNIQUE COVERAGE</span><span class="micro" id="resCount">0 ENTRIES</span></div>
+            <table id="resTable">
+              <thead>
+                <tr>
+                  <th class="w-resid">ID</th>
+                  <th class="w-reshost">HOST</th>
+                  <th class="w-resgroup">GROUP / PLATFORM</th>
+                  <th class="w-respresent">HERE</th>
+                  <th class="w-resgap">GAP</th>
+                  <th>ACTIVE CONTROLS</th>
+                </tr>
+              </thead>
+              <tbody id="resBody"></tbody>
+            </table>
+            <div class="empty" id="resEmpty">NO COVERAGE DATA // RUN THE INVENTORY</div>
+          </div>
+
+          <div class="card resside">
+            <div class="cardhead"><span>CONTROL PLANE</span><span class="micro" id="resCtlCount"></span></div>
+            <div class="scroll resctl" id="resControls">
+              <div class="empty small" id="resCtlEmpty">NO CONTROL DATA // RUN THE INVENTORY</div>
+            </div>
+            <div class="cardhead"><span>FINDINGS</span><span class="micro" id="resFindCount"></span></div>
+            <div class="scroll resfind" id="resFindings">
+              <div class="empty small" id="resFindEmpty">NO FINDINGS</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card detail" id="resDetail"><div class="resdempty"><span class="micro">SELECT A TECHNIQUE ROW FOR THE PROCESS TREE, DETECTION AND FIXES</span></div></div>
+      </div>
+
+      <!-- ============================ NETWORK =========================== -->
+      <div class="view" id="view-network">
+        <div class="row actions">
+          <button id="btnNetRun" class="btn primary">RUN INVENTORY</button>
+          <button id="btnNetLive" class="btn">LIVE 30s</button>
+          <button id="btnNetStop" class="mini" disabled>STOP</button>
+          <button id="btnNetPaths" class="mini">PATHS / ROUTES</button>
+          <button id="btnNetFind" class="mini">FINDINGS <span class="micro" id="netFindCount">0</span></button>
+          <button id="btnNetDetail" class="mini">DETAIL</button>
+          <button id="btnNetRecipe" class="mini primary" title="Open the manual pktmon recipe">PKTMON RECIPE</button>
+          <button id="btnNetLegend" class="mini">HOW TO READ</button>
+          <label class="toggle" title="Opt in for this run to enrich browser URLs from local browser history, read only.">
+            <input id="netHistory" type="checkbox" /> READ BROWSER HISTORY
+          </label>
+          <div class="grow"></div>
+          <input id="netFilter" class="procsearch" type="text" spellcheck="false" placeholder="filter url / host / process" />
+          <span class="micro" id="netState">NO DATA</span>
+        </div>
+
+        <div class="card ressumm" id="netSumm">
+          <span class="rsum dim">RUN AN INVENTORY // URLS ARE HOST-ONLY UNTIL HISTORY IS OPTED IN</span>
+        </div>
+
+        <div class="split netgraphs">
+          <div class="card">
+            <div class="cardhead"><span>NETWORK GRAPH</span><span class="micro" id="netGraphCount">0 NODES</span></div>
+            <div class="flowwrap" id="netWrap">
+              <div class="empty" id="netEmpty">RUN AN INVENTORY // LOCAL HOST TO PROCESS TO ENDPOINT</div>
+              <div id="netGraph"></div>
+            </div>
+            <div class="flowlegend">
+              <span class="fl browser">BROWSER</span>
+              <span class="fl background">BACKGROUND</span>
+              <span class="fl system">SYSTEM</span>
+              <span class="fl remote">URL / PEER</span>
+              <span class="fl note">Click a node for detail, or THIS HOST for adapters and routes.</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="cardhead"><span>BROWSER NETWORK GRAPH</span><span class="micro" id="netBrowserGraphCount">0 NODES</span></div>
+            <div class="flowwrap" id="netBrowserWrap">
+              <div class="empty" id="netBrowserEmpty">RUN AN INVENTORY // BROWSER PROCESS TO URL</div>
+              <div id="netBrowserGraph"></div>
+            </div>
+            <div class="flowlegend">
+              <span class="fl browser">BROWSER PROCESS</span>
+              <span class="fl remote">URL</span>
+              <span class="fl note">Host-only URLs are derived by default. Full URLs need the history opt-in.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="split nettables">
+          <div class="card">
+            <div class="cardhead"><span>BROWSER WEB FLOWS</span><span class="micro" id="netBrowserCount">0 FLOWS</span></div>
+            <div class="scroll" id="netBrowserBody">
+              <div class="empty small">RUN AN INVENTORY TO LIST BROWSER CONNECTIONS</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="cardhead"><span>BACKGROUND FLOWS</span><span class="micro" id="netBgCount">0 FLOWS</span></div>
+            <div class="scroll" id="netBgBody">
+              <div class="empty small">RUN AN INVENTORY TO LIST BACKGROUND CONNECTIONS</div>
+            </div>
+          </div>
+        </div>
+        <div class="row footrow"><span class="micro" id="netShown">0 BROWSER / 0 OTHER SHOWN</span></div>
+      </div>
+
+      <!-- ========================= PS LOGGING ========================= -->
+      <div class="view" id="view-pslog">
+        <div class="row actions">
+          <button id="btnPsLogRun" class="btn primary">READ PS LOG</button>
+          <div class="grow"></div>
+          <span class="micro">READ ONLY // NO LOG IS CHANGED OR CLEARED</span>
+          <span class="micro" id="pslogState">NO DATA</span>
+        </div>
+        <div class="card ressumm" id="pslogSumm">
+          <span class="rsum dim">NO READOUT // READ-ONLY POLICY CHECK AND EVENT 4104 SAMPLE</span>
+        </div>
+        <div class="split grow">
+          <div class="pslogstreams">
+            <div class="card pslogstream">
+              <div class="cardhead"><span>EVENT 4104 SAMPLES / CLICK FOR VERBOSE DETAIL</span><span class="micro" id="pslogEventCount">0</span></div>
+              <div class="scroll" id="pslogEvents">
+                <div class="empty small" id="pslogEmpty">RUN THE READOUT TO SAMPLE MASKED SCRIPT BLOCK TEXT</div>
+              </div>
+            </div>
+            <div class="card pslogstream blocked">
+              <div class="cardhead"><span>BLOCKED / PREVENTED POWERSHELL</span><span class="micro" id="pslogBlockCount">0</span></div>
+              <div class="scroll" id="pslogBlocks">
+                <div class="empty small" id="pslogBlockEmpty">RUN THE READOUT TO QUERY CONTROL BLOCK EVENTS</div>
+              </div>
+            </div>
+          </div>
+          <div class="card pslogside">
+            <div class="cardhead"><span>STATE AND REMEDIATION</span><span class="micro" id="pslogFindCount">0</span></div>
+            <div class="scroll pad" id="pslogFindings">
+              <div class="empty small" id="pslogFindEmpty">NO STATE FINDINGS // RUN THE READOUT</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <aside id="side">
+      <div class="card" id="consoleCard">
+        <div class="cardhead">
+          <span>CONSOLE</span>
+          <span class="tools"><a href="#" id="clearConsole">CLEAR</a></span>
+        </div>
+        <div class="console" id="console"></div>
+      </div>
+
+      <div class="card" id="sessionCard">
+        <div class="cardhead"><span>SESSION</span><span class="micro" id="sessState">IDLE</span></div>
+        <div class="kv" id="sessionKv"></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer id="statusbar">
+    <span class="sb" id="sbMode">MODE: ANALYSIS</span>
+    <span class="sb" id="sbHosts">HOSTS 0</span>
+    <span class="sb" id="sbPorts">PORTS 0</span>
+    <span class="sb" id="sbAlerts">ALERTS 0</span>
+    <span class="sb" id="sbRules">RULES -</span>
+    <div class="grow"></div>
+    <span class="sb dim" id="sbRun">RUN -</span>
+    <span class="sb dim">NETTRUDER 1.1.0</span>
+  </footer>
+</div>
+
+<!-- ===================== REMEDIATION MODAL ===================== -->
+<div id="modalWrap">
+  <div id="modalBox">
+    <div id="modalHead">
+      <span id="modalTitle">REMEDIATION</span>
+      <button id="modalClose" type="button" title="Close (Esc)">CLOSE</button>
+    </div>
+    <div id="modalBody"></div>
+    <div id="modalFoot"></div>
+  </div>
+</div>
+
+<!-- ==================== NEW-USER ONBOARDING ==================== -->
+<div id="onboardWrap">
+  <div id="onboardBox">
+    <div id="onboardHead">
+      <span id="onboardKicker">WELCOME</span>
+      <button id="onboardClose" type="button" title="Close and skip">SKIP</button>
+    </div>
+    <div id="onboardBody"></div>
+    <div id="onboardFoot"></div>
+  </div>
+</div>
+
+<!-- ===================== ALERT TOASTS ===================== -->
+<div id="toasts"></div>
+</body>
+</html>

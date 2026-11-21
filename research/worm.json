@@ -1,0 +1,274 @@
+{
+  "version": "2026.11.3",
+  "scope": "Defensive catalog of worm-like and lateral propagation behaviour on Windows. Every entry describes what to record and how to harden; none is a payload, exploit or copy-paste attack command.",
+  "techniques": [
+    {
+      "id": "T1021.002",
+      "name": "SMB admin share copy",
+      "host": "net.exe",
+      "path": "C:\\Windows\\System32\\net.exe",
+      "family": "Worm-like propagation",
+      "platform": "windows",
+      "group": "Worm-like Propagation",
+      "method": "Remote file copy",
+      "risk": "high",
+      "abuse": "Uses SMB admin shares (ADMIN$, C$, IPC$) to copy a file to a remote host and then start it through a service, task or WMI. A worm repeats this across every reachable peer.",
+      "probe": "Inventory only. The IDS fan-out and lateral heuristics watch the network side.",
+      "telemetry": [
+        "4688 process creation for net.exe, xcopy.exe, robocopy.exe",
+        "Sysmon 1 process create",
+        "Sysmon 3/22 network to 445/139",
+        "Security 5140/5145 share access",
+        "Security 4624 type 3 logon"
+      ],
+      "detection": "net use or net view against many hosts in a short window. Copy tools writing to \\\\host\\ADMIN$ or \\\\host\\C$. One workstation account authenticating to many peers on 445. Correlate 5140/5145 with 4688.",
+      "hardening": [
+        "Disable SMBv1 and require SMB signing and encryption.",
+        "Remove workstation accounts from local Administrators on peers; admin shares need admin rights.",
+        "Segment client networks so workstations cannot reach each other on 445/139.",
+        "Enable firewall rules that block inbound 445 from client subnets."
+      ],
+      "needs": ["process", "network"],
+      "controls": ["cmdline", "sysmon", "asr"],
+      "tree": [
+        { "s": "Foothold", "t": "T1204", "p": "user or service starts a loader", "a": "Initial execution on one host", "d": "4688; Sysmon 1", "c": "" },
+        { "s": "Recon", "t": "T1018", "p": "net.exe view /domain", "a": "Enumerates reachable peers", "d": "4688 cmdline; Sysmon 3", "c": "net.exe view" },
+        { "s": "Lateral copy", "t": "T1021.002", "p": "net.exe use \\\\host\\ADMIN$", "a": "Mounts an admin share for file copy", "d": "5140/5145; Sysmon 3 to 445", "c": "net.exe use \\\\\\\\host\\\\ADMIN$" },
+        { "s": "Execute", "t": "T1569.002", "p": "sc.exe \\\\host create", "a": "Starts the copied file as a service", "d": "4688; 7045 service install; Sysmon 1", "c": "sc.exe \\\\\\\\host create" }
+      ],
+      "cmd": { "m": ["net(1)?\\.exe\\s+use\\s+\\\\\\\\", "xcopy.*ADMIN\\$", "robocopy.*ADMIN\\$", "net\\.exe\\s+view"], "w": "Admin-share paths and net view are the copy-and-spread pattern; normal user file sharing does not target ADMIN$." },
+      "asr": [
+        { "g": "d1e49aac-8f56-4280-b9ba-993a6d77406c", "n": "Block process creations originating from PSExec and WMI commands" },
+        { "g": "c1db55ab-c21a-4637-bb3f-a12568109d35", "n": "Block credential stealing from lsass.exe" }
+      ],
+      "net": { "w": "A workstation that opens 445 or 139 to many peers in one minute is the network signature of SMB spread.", "ports": "445,139" },
+      "fix": [
+        "Block inbound SMB from client subnets at the host firewall and at the switch ACL.",
+        "Remove local admin rights from day-to-day accounts.",
+        "Alert on 5140/5145 share access to ADMIN$ or C$ from a workstation account.",
+        "Keep the IDS FANOUT and LATERAL_FANOUT rules armed; they name the process and the peer list."
+      ]
+    },
+    {
+      "id": "T1543.002",
+      "name": "Remote service creation",
+      "host": "sc.exe",
+      "path": "C:\\Windows\\System32\\sc.exe",
+      "family": "Worm-like propagation",
+      "platform": "windows",
+      "group": "Worm-like Propagation",
+      "method": "Service control",
+      "risk": "high",
+      "abuse": "Creates or reconfigures a service on a remote host so the service binary runs with SYSTEM rights. Repeated across peers, this is a common worm lateral step.",
+      "probe": "Inventory only. Service creation is visible in the System log and in process telemetry.",
+      "telemetry": [
+        "4688 process creation for sc.exe and services.exe",
+        "System 7045 service installed",
+        "System 7040 service start type changed",
+        "Sysmon 1 process create",
+        "Security 4624 type 3 logon"
+      ],
+      "detection": "sc.exe with a remote host prefix, create or config, and a binPath outside Program Files. 7045 events with a binary in a user-writable path. A burst of 7045 on many hosts from one account.",
+      "hardening": [
+        "Restrict service creation to administrators and to managed endpoints.",
+        "Enable the System log and forward 7045 to a central collector.",
+        "Block inbound 135/445/139 from client subnets.",
+        "Use AppLocker or WDAC to stop unsigned binaries running as services."
+      ],
+      "needs": ["process"],
+      "controls": ["cmdline", "sysmon", "applocker", "wdac"],
+      "tree": [
+        { "s": "Foothold", "t": "T1204", "p": "loader on first host", "a": "Initial execution", "d": "4688; Sysmon 1", "c": "" },
+        { "s": "Remote create", "t": "T1543.002", "p": "sc.exe \\\\host create", "a": "Registers a service on a peer", "d": "4688; System 7045", "c": "sc.exe \\\\\\\\host create" },
+        { "s": "Start", "t": "T1569.002", "p": "sc.exe \\\\host start", "a": "Starts the service as SYSTEM", "d": "System 7036; 4688 child", "c": "sc.exe \\\\\\\\host start" },
+        { "s": "Repeat", "t": "T1021.002", "p": "sc.exe against next peer", "a": "Repeats the cycle", "d": "7045 burst; fan-out alert", "c": "" }
+      ],
+      "cmd": { "m": ["sc(\\.exe)?\\s+\\\\\\\\.+\\s+create", "sc(\\.exe)?\\s+config.+binPath", "sc(\\.exe)?\\s+\\\\\\\\.+\\s+start"], "w": "A remote sc.exe create or config with a non-standard binPath is the service-based spread pattern." },
+      "asr": [
+        { "g": "d1e49aac-8f56-4280-b9ba-993a6d77406c", "n": "Block process creations originating from PSExec and WMI commands" }
+      ],
+      "net": { "w": "Service control rides 135 (RPC) and 445 (SMB). Watch one host contacting many peers on those ports.", "ports": "135,445" },
+      "fix": [
+        "Forward System 7045/7040 to the SIEM and alert on bursts.",
+        "Remove local admin rights from standard users.",
+        "Restrict inbound 135/445 from client VLANs.",
+        "Require signed service binaries with WDAC."
+      ]
+    },
+    {
+      "id": "T1053.005",
+      "name": "Remote scheduled task",
+      "host": "schtasks.exe",
+      "path": "C:\\Windows\\System32\\schtasks.exe",
+      "family": "Worm-like propagation",
+      "platform": "windows",
+      "group": "Worm-like Propagation",
+      "method": "Scheduled execution",
+      "risk": "high",
+      "abuse": "Creates a task on a remote host with /s so the task runs a copied binary under a privileged account. A worm uses it to survive and to move to the next peer.",
+      "probe": "Inventory only. Task creation is visible in 4698 and in the TaskScheduler operational log.",
+      "telemetry": [
+        "4688 process creation for schtasks.exe",
+        "Security 4698 scheduled task created",
+        "Microsoft-Windows-TaskScheduler/Operational 106/200",
+        "Sysmon 1 process create"
+      ],
+      "detection": "schtasks.exe with /create and /s, or /change and /s. 4698 with a task action outside Program Files. Task names that look random or copy a system binary name.",
+      "hardening": [
+        "Enable 4698 auditing and forward it.",
+        "Restrict remote task creation with the Task Scheduler security descriptor.",
+        "Block inbound 135/445 from client subnets.",
+        "Use WDAC to stop unsigned binaries running from task actions."
+      ],
+      "needs": ["process"],
+      "controls": ["cmdline", "sysmon", "applocker", "wdac"],
+      "tree": [
+        { "s": "Foothold", "t": "T1204", "p": "loader on first host", "a": "Initial execution", "d": "4688; Sysmon 1", "c": "" },
+        { "s": "Remote task", "t": "T1053.005", "p": "schtasks.exe /create /s host", "a": "Creates a task on a peer", "d": "4698; TaskScheduler 106", "c": "schtasks(.exe)?\\s+/create.+\\/s" },
+        { "s": "Trigger", "t": "T1053.005", "p": "task action runs", "a": "Runs the copied binary", "d": "4688 parent=taskeng/taskhostw", "c": "" },
+        { "s": "Repeat", "t": "T1053.005", "p": "schtasks against next peer", "a": "Repeats the cycle", "d": "4698 burst; fan-out alert", "c": "" }
+      ],
+      "cmd": { "m": ["schtasks(\\.exe)?\\s+/create.+\\/s\\s", "schtasks(\\.exe)?\\s+/change.+\\/s\\s", "schtasks.*\\\\Temp\\\\"], "w": "Remote task creation with /s plus a temp-dir action is the spread pattern." },
+      "asr": [],
+      "net": { "w": "Remote task creation uses RPC over 135 and SMB over 445. Fan-out to many peers is the worm signal.", "ports": "135,445" },
+      "fix": [
+        "Alert on 4698 from a workstation account to multiple hosts.",
+        "Restrict remote task creation to management servers.",
+        "Remove local admin rights from day-to-day accounts.",
+        "Keep TaskScheduler operational logging enabled."
+      ]
+    },
+    {
+      "id": "T1047",
+      "name": "Remote WMI process creation",
+      "host": "WmiPrvSE.exe",
+      "path": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "family": "Worm-like propagation",
+      "platform": "windows",
+      "group": "Worm-like Propagation",
+      "method": "WMI remote execution",
+      "risk": "high",
+      "abuse": "Uses WMI over DCOM or WinRM to start a process on a remote host. The child process is parented by WmiPrvSE.exe, which hides the original operator from a naive process tree.",
+      "probe": "Inventory only. WMI activity is visible in the WMI-Activity operational log and in Sysmon 1/19/20/21.",
+      "telemetry": [
+        "Sysmon 1 process create with parent WmiPrvSE.exe",
+        "Sysmon 19/20/21 WMI event subscription",
+        "Microsoft-Windows-WMI-Activity/Operational 5857/5860/5861",
+        "4688 with parent WmiPrvSE.exe"
+      ],
+      "detection": "WmiPrvSE.exe spawning cmd.exe, powershell.exe or a binary from a temp path. WMI-Activity events with a remote client. WinRM 5985/5986 logons from workstations.",
+      "hardening": [
+        "Restrict WMI and WinRM to management hosts with firewall rules.",
+        "Enable WMI-Activity operational logging and forward it.",
+        "Use the ASR rule that blocks process creation from PSExec and WMI.",
+        "Do not give workstation accounts local admin rights on peers."
+      ],
+      "needs": ["process", "network"],
+      "controls": ["cmdline", "sysmon", "asr"],
+      "tree": [
+        { "s": "Foothold", "t": "T1204", "p": "loader on first host", "a": "Initial execution", "d": "4688; Sysmon 1", "c": "" },
+        { "s": "Remote call", "t": "T1047", "p": "wmic.exe /node:host process call create", "a": "Asks WMI to start a process on a peer", "d": "WMI-Activity 5857; Sysmon 3", "c": "wmic(\\.exe)?\\s+/node:" },
+        { "s": "Child", "t": "T1047", "p": "WmiPrvSE.exe -> cmd.exe", "a": "The WMI service starts the payload", "d": "Sysmon 1 parent=WmiPrvSE.exe", "c": "" },
+        { "s": "Repeat", "t": "T1047", "p": "next /node: target", "a": "Repeats across peers", "d": "WMI-Activity burst; fan-out alert", "c": "" }
+      ],
+      "cmd": { "m": ["wmic(\\.exe)?\\s+/node:", "Invoke-WmiMethod.*-ComputerName", "Invoke-CimMethod.*-ComputerName"], "w": "Remote WMI execution names a target host and a process-create method; local inventory does not." },
+      "asr": [
+        { "g": "d1e49aac-8f56-4280-b9ba-993a6d77406c", "n": "Block process creations originating from PSExec and WMI commands" }
+      ],
+      "net": { "w": "WMI over DCOM uses 135 plus a dynamic RPC range; WinRM uses 5985/5986. Watch one host contacting many peers.", "ports": "135,5985,5986" },
+      "fix": [
+        "Restrict 135/5985/5986 to management servers.",
+        "Enable and forward WMI-Activity operational logs.",
+        "Enable the PSExec/WMI child-process ASR rule.",
+        "Alert on WmiPrvSE.exe spawning a shell."
+      ]
+    },
+    {
+      "id": "T1569.002",
+      "name": "Service execution (PsExec pattern)",
+      "host": "psexesvc.exe",
+      "path": "C:\\Windows\\System32\\psexesvc.exe",
+      "family": "Worm-like propagation",
+      "platform": "windows",
+      "group": "Worm-like Propagation",
+      "method": "Service execution",
+      "risk": "high",
+      "abuse": "Copies a service binary to a remote host, installs it as a service, starts it, and lets it spawn a shell. The service binary often has a random or tool-specific name.",
+      "probe": "Inventory only. The host file is usually absent unless a PsExec-style tool has been used.",
+      "telemetry": [
+        "System 7045 service installed",
+        "4688 process creation for the service child",
+        "Sysmon 1 process create; Sysmon 11 file create",
+        "Security 5140/5145 admin share access"
+      ],
+      "detection": "7045 with a service binary in ADMIN$, Windows\\Temp or a user profile. A service that starts and is deleted within minutes. psexesvc.exe or a random service name on many peers.",
+      "hardening": [
+        "Alert on 7045 for binaries outside Program Files and Windows\\System32.",
+        "Block inbound 445 from client subnets.",
+        "Remove workstation local admin rights.",
+        "Use WDAC to block unsigned service binaries."
+      ],
+      "needs": ["process"],
+      "controls": ["cmdline", "sysmon", "applocker", "wdac", "asr"],
+      "tree": [
+        { "s": "Copy", "t": "T1021.002", "p": "copy tool -> \\\\host\\ADMIN$", "a": "Places the service binary on the peer", "d": "5140/5145; Sysmon 11", "c": "" },
+        { "s": "Install", "t": "T1543.002", "p": "service create/start", "a": "Registers and starts the service", "d": "System 7045/7036", "c": "" },
+        { "s": "Execute", "t": "T1569.002", "p": "service -> cmd.exe", "a": "The service starts a shell", "d": "Sysmon 1 parent=services.exe", "c": "" },
+        { "s": "Cleanup", "t": "T1070.004", "p": "service delete", "a": "Removes the service after use", "d": "System 7045 then delete; 4688 sc delete", "c": "" }
+      ],
+      "cmd": { "m": ["psexesvc", "sc(\\.exe)?\\s+delete", "ADMIN\\$.+\\.exe"], "w": "A service binary in ADMIN$ that is installed, started and deleted in one session is the PsExec pattern." },
+      "asr": [
+        { "g": "d1e49aac-8f56-4280-b9ba-993a6d77406c", "n": "Block process creations originating from PSExec and WMI commands" }
+      ],
+      "net": { "w": "The copy and service control happen over 445 and 135. Fan-out to many peers is the worm signal.", "ports": "445,135" },
+      "fix": [
+        "Enable and forward System 7045.",
+        "Alert on service binaries outside trusted paths.",
+        "Block client-to-client SMB.",
+        "Enable the PSExec/WMI child-process ASR rule."
+      ]
+    },
+    {
+      "id": "T1021.001",
+      "name": "Remote Desktop spread",
+      "host": "mstsc.exe",
+      "path": "C:\\Windows\\System32\\mstsc.exe",
+      "family": "Worm-like propagation",
+      "platform": "windows",
+      "group": "Worm-like Propagation",
+      "method": "Remote interactive logon",
+      "risk": "med",
+      "abuse": "Uses saved credentials or a harvested password to open RDP to many peers. A worm can use RDP for manual or automated spread, and ransomware operators use it for lateral movement.",
+      "probe": "Inventory only. RDP use is visible in 4624 type 10 and in the TerminalServices logs.",
+      "telemetry": [
+        "Security 4624 logon type 10",
+        "Security 4625 failed logon",
+        "Microsoft-Windows-TerminalServices-LocalSessionManager/Operational 21/25",
+        "4688 process creation for mstsc.exe"
+      ],
+      "detection": "One account with 4624 type 10 to many hosts in a short window. mstsc.exe launched repeatedly with different /v: targets. RDP from a workstation to another workstation.",
+      "hardening": [
+        "Require NLA and MFA for RDP.",
+        "Restrict RDP to jump hosts with firewall rules.",
+        "Disable RDP on endpoints that do not need it.",
+        "Alert on workstation-to-workstation RDP."
+      ],
+      "needs": ["process", "network"],
+      "controls": ["cmdline", "sysmon"],
+      "tree": [
+        { "s": "Credentials", "t": "T1078", "p": "valid account or saved credential", "a": "Obtains a usable logon", "d": "4624 type 10; 4648", "c": "" },
+        { "s": "Connect", "t": "T1021.001", "p": "mstsc.exe /v:host", "a": "Opens RDP to a peer", "d": "4624 type 10; TermService 21", "c": "mstsc(\\.exe)?\\s+/v:" },
+        { "s": "Repeat", "t": "T1021.001", "p": "mstsc.exe /v:next", "a": "Moves to the next peer", "d": "4624 type 10 burst", "c": "" }
+      ],
+      "cmd": { "m": ["mstsc(\\.exe)?\\s+/v:", "cmdkey.*\\/generic"], "w": "Repeated mstsc targets or saved-credential creation from a non-admin context is the spread pattern." },
+      "asr": [],
+      "net": { "w": "RDP is 3389. Workstation-to-workstation 3389 is abnormal in most estates.", "ports": "3389" },
+      "fix": [
+        "Require NLA and MFA for RDP.",
+        "Restrict 3389 to jump hosts.",
+        "Alert on 4624 type 10 from workstation to workstation.",
+        "Disable RDP where it is not required."
+      ]
+    }
+  ]
+}

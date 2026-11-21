@@ -1,0 +1,533 @@
+{
+    "version": "1.0.0",
+    "scope": "Defensive source-study catalog for the trimmed local HEVD source copy. No build, no driver load, no device request, no exploit code and no payload.",
+    "taxonomy": "method=Source Review marks study entries. Presence is not evaluated because these are source subjects, not host binaries. Gap is NOT EVALUATED by design.",
+    "techniques": [
+        {
+            "id": "HEVD-IOCTL",
+            "name": "Device Control Boundary",
+            "host": "hevd-ioctl",
+            "path": "Driver/HEVD/Windows/HackSysExtremeVulnerableDriver.c",
+            "family": "Kernel Driver Study",
+            "platform": "windows",
+            "group": "Kernel Source Review",
+            "method": "Source Review",
+            "risk": "info",
+            "abuse": "Not an offensive technique. This entry marks the device-control path as a source-review subject: entry points, access scope, and buffer validation before use.",
+            "probe": "Inventory only. No device request is sent and no driver is loaded.",
+            "telemetry": [
+                "Static source review",
+                "Driver load auditing on a real lab host",
+                "Code integrity telemetry on a real lab host"
+            ],
+            "detection": "Review the dispatch routine for explicit input and output length checks, fixed buffer methods, and access restrictions. On a managed host, rely on driver-load and code-integrity events, not exploit traces.",
+            "hardening": [
+                "Validate InputBufferLength and OutputBufferLength before any read or write.",
+                "Prefer a fixed buffer method with an explicit minimum and maximum size.",
+                "Scope device access to the accounts that actually need it."
+            ],
+            "needs": [],
+            "controls": [],
+            "tree": [
+                {
+                    "a": "Locate the driver entry and the dispatch table assignment",
+                    "s": "Source review",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Record where device control requests are handled",
+                    "s": "Boundary mapping",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Check length and access validation before buffer use",
+                    "s": "Defensive review",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                }
+            ],
+            "cmd": {
+                "m": [],
+                "w": ""
+            },
+            "asr": [],
+            "net": {
+                "w": "",
+                "ports": ""
+            },
+            "fix": [
+                "Document the dispatch function and each validation step in RESEARCH.",
+                "Add a Code Audit rule that flags device-control handlers without nearby length checks.",
+                "Treat any review gap as a study note, never as proof of exploitability."
+            ]
+        },
+        {
+            "id": "HEVD-COPY",
+            "name": "Fixed-Size Copy Review",
+            "host": "hevd-copy",
+            "path": "Driver/HEVD/Windows/BufferOverflowStack.c",
+            "family": "Kernel Driver Study",
+            "platform": "windows",
+            "group": "Kernel Source Review",
+            "method": "Source Review",
+            "risk": "info",
+            "abuse": "Not an offensive technique. This entry studies copy operations where destination capacity and source length must be checked.",
+            "probe": "Inventory only. No buffer is allocated or written by NetTruder.",
+            "telemetry": [
+                "Static source review",
+                "Compiler and static-analysis warnings"
+            ],
+            "detection": "Look for unbounded copy APIs, length values taken from callers, and fixed-size local buffers. Confirm that every copied length is bounded by the destination size.",
+            "hardening": [
+                "Use bounded copy helpers with an explicit destination size.",
+                "Check arithmetic before allocation or copy.",
+                "Prefer safe string functions and length-preserving conversions."
+            ],
+            "needs": [],
+            "controls": [],
+            "tree": [
+                {
+                    "a": "Find a copy call in a vulnerable-study source file",
+                    "s": "Source review",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Trace the destination size and source length",
+                    "s": "Data flow",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Write a defensive finding with the correct bounded API",
+                    "s": "Remediation",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                }
+            ],
+            "cmd": {
+                "m": [],
+                "w": ""
+            },
+            "asr": [],
+            "net": {
+                "w": "",
+                "ports": ""
+            },
+            "fix": [
+                "Replace unbounded copies with size-checked equivalents.",
+                "Add regression tests that use oversized input in a controlled unit test, not a live driver.",
+                "Link each Code Audit hit to this RESEARCH entry."
+            ]
+        },
+        {
+            "id": "HEVD-POOL",
+            "name": "Pool Lifetime and Size Review",
+            "host": "hevd-pool",
+            "path": "Driver/HEVD/Windows/BufferOverflowNonPagedPool.c",
+            "family": "Kernel Driver Study",
+            "platform": "windows",
+            "group": "Kernel Source Review",
+            "method": "Source Review",
+            "risk": "info",
+            "abuse": "Not an offensive technique. This entry studies allocation size, initialization, and free paths in kernel pool code.",
+            "probe": "Inventory only. No pool is allocated or freed by NetTruder.",
+            "telemetry": [
+                "Static source review",
+                "Driver Verifier on a separate lab host",
+                "Pool monitoring telemetry on a separate lab host"
+            ],
+            "detection": "Review allocation size arithmetic, tag use, initialization, and every free path. Look for double-free or use-after-free conditions by reading ownership changes, not by triggering them.",
+            "hardening": [
+                "Check multiplication and addition before allocation.",
+                "Initialise allocated structures before use.",
+                "Clear pointers after free and enforce single ownership."
+            ],
+            "needs": [],
+            "controls": [],
+            "tree": [
+                {
+                    "a": "Find the allocation call and its size expression",
+                    "s": "Source review",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Follow initialisation and ownership through the function",
+                    "s": "Lifetime mapping",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Record the safe free path and any gap",
+                    "s": "Remediation",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                }
+            ],
+            "cmd": {
+                "m": [],
+                "w": ""
+            },
+            "asr": [],
+            "net": {
+                "w": "",
+                "ports": ""
+            },
+            "fix": [
+                "Use checked integer arithmetic for allocation sizes.",
+                "Document single-owner lifetime rules in the RESEARCH note.",
+                "Enable Driver Verifier only in a separate disposable lab, never on a production host."
+            ]
+        },
+        {
+            "id": "HEVD-UAF",
+            "name": "Object Lifetime Review",
+            "host": "hevd-uaf",
+            "path": "Driver/HEVD/Windows/UseAfterFreeNonPagedPool.c",
+            "family": "Kernel Driver Study",
+            "platform": "windows",
+            "group": "Kernel Source Review",
+            "method": "Source Review",
+            "risk": "info",
+            "abuse": "Not an offensive technique. This entry studies how an object can be referenced after its lifetime has ended.",
+            "probe": "Inventory only. No object is created or released by NetTruder.",
+            "telemetry": [
+                "Static source review",
+                "Pool and handle telemetry on a separate lab host"
+            ],
+            "detection": "Trace allocation, reference, free, and nulling. A defensive finding is any path that can still reach an object after the free branch.",
+            "hardening": [
+                "Use reference-counted ownership for shared objects.",
+                "Set pointers to null immediately after free.",
+                "Avoid storing raw pointers in longer-lived structures."
+            ],
+            "needs": [],
+            "controls": [],
+            "tree": [
+                {
+                    "a": "Mark allocation and free branches in the source",
+                    "s": "Source review",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Trace every later dereference of the same pointer",
+                    "s": "Lifetime mapping",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Write the safe ownership rule in RESEARCH",
+                    "s": "Remediation",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                }
+            ],
+            "cmd": {
+                "m": [],
+                "w": ""
+            },
+            "asr": [],
+            "net": {
+                "w": "",
+                "ports": ""
+            },
+            "fix": [
+                "Document the ownership rule next to the struct definition.",
+                "Prefer APIs that return owned handles rather than raw pointers.",
+                "Do not attempt dynamic validation on a production host."
+            ]
+        },
+        {
+            "id": "HEVD-INT",
+            "name": "Integer Arithmetic Review",
+            "host": "hevd-int",
+            "path": "Driver/HEVD/Windows/IntegerOverflow.c",
+            "family": "Kernel Driver Study",
+            "platform": "windows",
+            "group": "Kernel Source Review",
+            "method": "Source Review",
+            "risk": "info",
+            "abuse": "Not an offensive technique. This entry studies arithmetic that decides buffer size or copy length. A wrapped value can make a bound check pass while the real size is too large; study the pattern, never a trigger.",
+            "probe": "Inventory only. No arithmetic is executed by NetTruder.",
+            "telemetry": [
+                "Static source review",
+                "Compiler warnings and static analysis"
+            ],
+            "detection": "Look for multiplication, addition, or subtraction on sizes that come from callers, especially arithmetic inside a comparison. A fixed-width value can wrap, so the check reads a small number while the real requirement is large. Confirm checked arithmetic and a final bound against the destination capacity.",
+            "hardening": [
+                "Use checked integer helpers before allocation.",
+                "Reject sizes above a documented maximum.",
+                "Verify the bound after the arithmetic, not before it.",
+                "Use size_t consistently for lengths."
+            ],
+            "needs": [],
+            "controls": [],
+            "tree": [
+                {
+                    "a": "Locate arithmetic that feeds a size or length",
+                    "s": "Source review",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Identify the type and maximum possible value",
+                    "s": "Range analysis",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Record the checked-arithmetic fix",
+                    "s": "Remediation",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                }
+            ],
+            "cmd": {
+                "m": [],
+                "w": ""
+            },
+            "asr": [],
+            "net": {
+                "w": "",
+                "ports": ""
+            },
+            "fix": [
+                "Replace raw arithmetic with checked helpers.",
+                "Add a maximum-size constant and reject larger requests.",
+                "Verify the bound after the calculation so a wrapped value cannot pass it.",
+                "Attach the rule hit to this RESEARCH entry."
+            ]
+        },
+        {
+            "id": "HEVD-UNINIT",
+            "name": "Initialisation Review",
+            "host": "hevd-uninit",
+            "path": "Driver/HEVD/Windows/UninitializedMemoryStack.c",
+            "family": "Kernel Driver Study",
+            "platform": "windows",
+            "group": "Kernel Source Review",
+            "method": "Source Review",
+            "risk": "info",
+            "abuse": "Not an offensive technique. This entry studies structures that are read before every field is assigned.",
+            "probe": "Inventory only. No stack memory is read or written by NetTruder.",
+            "telemetry": [
+                "Static source review",
+                "Compiler initialisation warnings"
+            ],
+            "detection": "Find local structures or buffers that are copied or returned. Confirm that all fields are assigned or explicitly zeroed before use.",
+            "hardening": [
+                "Use designated initialisation where possible.",
+                "Zero structures before populating them.",
+                "Enable compiler warnings for uninitialised variables."
+            ],
+            "needs": [],
+            "controls": [],
+            "tree": [
+                {
+                    "a": "Find a local structure used as output",
+                    "s": "Source review",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Check every field for an assignment",
+                    "s": "Data flow",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Record the safe initialisation pattern",
+                    "s": "Remediation",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                }
+            ],
+            "cmd": {
+                "m": [],
+                "w": ""
+            },
+            "asr": [],
+            "net": {
+                "w": "",
+                "ports": ""
+            },
+            "fix": [
+                "Initialise the whole structure before field assignment.",
+                "Treat compiler warnings as build failures in the study notes.",
+                "Do not attempt to read uninitialised memory at runtime."
+            ]
+        },
+        {
+            "id": "HEVD-PTR",
+            "name": "User Pointer Boundary Review",
+            "host": "hevd-ptr",
+            "path": "Driver/HEVD/Windows/DoubleFetch.c",
+            "family": "Kernel Driver Study",
+            "platform": "windows",
+            "group": "Kernel Source Review",
+            "method": "Source Review",
+            "risk": "info",
+            "abuse": "Not an offensive technique. This entry studies buffers that cross the user-to-kernel boundary and must be validated once and copied safely.",
+            "probe": "Inventory only. No user buffer is probed or read by NetTruder.",
+            "telemetry": [
+                "Static source review",
+                "Kernel-mode code integrity telemetry on a separate lab host"
+            ],
+            "detection": "Review whether user pointers are probed, captured once into kernel memory, and validated inside exception handling. Flag repeated reads of the same user buffer without a consistent snapshot.",
+            "hardening": [
+                "Probe user buffers before access.",
+                "Copy user data into a kernel-owned buffer once, then validate the copy.",
+                "Use exception handling around every user-buffer access."
+            ],
+            "needs": [],
+            "controls": [],
+            "tree": [
+                {
+                    "a": "Locate a buffer that comes from a caller",
+                    "s": "Source review",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Check probe, copy, and validation order",
+                    "s": "Boundary mapping",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Record a single-snapshot defensive pattern",
+                    "s": "Remediation",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                }
+            ],
+            "cmd": {
+                "m": [],
+                "w": ""
+            },
+            "asr": [],
+            "net": {
+                "w": "",
+                "ports": ""
+            },
+            "fix": [
+                "Probe and copy once, then use only the kernel-owned copy.",
+                "Keep validation next to the copy, not next to later reads.",
+                "Never send a device request from NetTruder."
+            ]
+        },
+        {
+            "id": "HEVD-MITIGATIONS",
+            "name": "Kernel Mitigation Mapping",
+            "host": "hevd-mitigations",
+            "path": "Driver/HEVD/Windows/",
+            "family": "Kernel Driver Study",
+            "platform": "windows",
+            "group": "Kernel Source Review",
+            "method": "Source Review",
+            "risk": "info",
+            "abuse": "Not an offensive technique. This entry maps bug classes to defensive controls and platform mitigations without testing bypasses.",
+            "probe": "Inventory only. No mitigation is enabled, disabled, or bypassed.",
+            "telemetry": [
+                "Code integrity policy state",
+                "Driver blocklist state",
+                "Virtualisation-based security state",
+                "Driver Verifier in a disposable lab only"
+            ],
+            "detection": "Use host policy state and driver-load events to judge exposure. A source finding is not proof that a mitigation can be defeated.",
+            "hardening": [
+                "Keep VBS, HVCI and code integrity enabled where supported.",
+                "Inventory third-party drivers and remove abandoned ones.",
+                "Use Driver Verifier only in a controlled test VM."
+            ],
+            "needs": [],
+            "controls": [],
+            "tree": [
+                {
+                    "a": "Select a bug class from the catalog",
+                    "s": "Study",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Map it to the control that reduces exposure",
+                    "s": "Defensive mapping",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                },
+                {
+                    "a": "Record what the control does and does not prove",
+                    "s": "Evidence limits",
+                    "t": "",
+                    "c": "",
+                    "d": "Static only",
+                    "p": ""
+                }
+            ],
+            "cmd": {
+                "m": [],
+                "w": ""
+            },
+            "asr": [],
+            "net": {
+                "w": "",
+                "ports": ""
+            },
+            "fix": [
+                "Write one RESEARCH note per bug class with control state and evidence limits.",
+                "Never turn a security control off to make a study result more interesting.",
+                "Treat an Application Control block as a positive defensive result."
+            ]
+        }
+    ]
+}

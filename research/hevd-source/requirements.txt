@@ -1,0 +1,5 @@
+# The HEVD lab helper uses only the Python standard library.
+# No third-party package is required or installed by NetTruder.
+#
+# Optional, only if you want to install it yourself in this venv:
+#   .venv\Scripts\python.exe -m pip install --upgrade pip

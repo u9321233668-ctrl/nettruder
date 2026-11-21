@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "NetTruder Site Posture",
+  "short_name": "NT Posture",
+  "version": "1.4.0",
+  "description": "Read-only defensive page posture checks for NetTruder. Local only; no data is sent anywhere.",
+  "minimum_chrome_version": "102",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "webRequest"
+  ],
+  "optional_host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "NetTruder Site Posture"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

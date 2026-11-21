@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>NETTRUDER LAB MARKER</title>
+<hta:application id="lab"
+    applicationname="NetTruderLabMarker"
+    border="thin"
+    caption="yes"
+    maximizebutton="no"
+    minimizebutton="no"
+    scroll="no"
+    singleinstance="yes"
+    windowstate="normal" />
+<style type="text/css">
+  body {
+    margin: 0;
+    padding: 22px;
+    background: #05070a;
+    color: #9df7cf;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+  }
+  b { color: #35f0a0; letter-spacing: 0.14em; }
+  .dim { color: #5f7482; margin-top: 8px; }
+</style>
+<script language="JScript">
+window.onload = function () {
+  try {
+    window.resizeTo(420, 160);
+    var fso = new ActiveXObject('Scripting.FileSystemObject');
+    var sh = new ActiveXObject('WScript.Shell');
+    var dir = sh.ExpandEnvironmentStrings('%NETTRUDER_LAB_DIR%');
+    if (dir === '%NETTRUDER_LAB_DIR%' || !dir) {
+      dir = sh.ExpandEnvironmentStrings('%LOCALAPPDATA%') + '\\NetTruder\\lab';
+    }
+    ensureFolder(fso, dir);
+    var f = fso.OpenTextFile(dir + '\\markers.log', 8, true);
+    f.WriteLine(stamp() + ' | hta | marker.hta | '
+      + sh.ExpandEnvironmentStrings('%USERNAME%') + '@'
+      + sh.ExpandEnvironmentStrings('%COMPUTERNAME%'));
+    f.Close();
+    document.getElementById('state').innerHTML = 'marker written to ' + dir;
+  } catch (e) {
+    document.getElementById('state').innerHTML = 'marker failed: ' + e.message;
+  }
+  window.setTimeout(function () { window.close(); }, 1400);
+};
+
+function ensureFolder(fs, path) {
+  if (fs.FolderExists(path)) { return; }
+  var parent = fs.GetParentFolderName(path);
+  if (parent) { ensureFolder(fs, parent); }
+  fs.CreateFolder(path);
+}
+
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+function stamp() {
+  var d = new Date();
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate())
+    + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+}
+</script>
+</head>
+<body>
+  <b>NETTRUDER LAB MARKER</b>
+  <div class="dim">Inert telemetry probe. No payload, no network, no persistence.</div>
+  <div class="dim" id="state">writing marker...</div>
+</body>
+</html>

@@ -1,0 +1,72 @@
+{
+  "version": "2026.11.2",
+  "listenPorts": [
+    { "port": 3389, "service": "rdp",        "sev": "high", "why": "Remote Desktop is listening. Exposed RDP is a leading brute-force and ransomware entry point; require NLA and never expose it directly." },
+    { "port": 445,  "service": "smb",        "sev": "high", "why": "SMB is listening. SMB is the primary lateral-movement channel on Windows networks and a ransomware target." },
+    { "port": 23,   "service": "telnet",     "sev": "high", "why": "Telnet is listening. Credentials cross the wire in plaintext." },
+    { "port": 21,   "service": "ftp",        "sev": "high", "why": "FTP is listening. Credentials and data are unencrypted." },
+    { "port": 5900, "service": "vnc",        "sev": "high", "why": "VNC is listening. Many builds ship with weak or absent authentication." },
+    { "port": 6379, "service": "redis",      "sev": "high", "why": "Redis is listening. Unauthenticated Redis is routinely abused for remote code execution." },
+    { "port": 27017,"service": "mongodb",    "sev": "high", "why": "MongoDB is listening. Check authentication and bind address." },
+    { "port": 9200, "service": "elastic",    "sev": "high", "why": "Elasticsearch is listening. Historically deployed without authentication." },
+    { "port": 11211,"service": "memcached",  "sev": "high", "why": "Memcached is listening. Abused for amplification and cache poisoning." },
+    { "port": 139,  "service": "netbios",    "sev": "med",  "why": "Legacy NetBIOS session service is listening." },
+    { "port": 22,   "service": "ssh",        "sev": "med",  "why": "SSH is listening. Confirm it is intentional and key-only." },
+    { "port": 1433, "service": "mssql",      "sev": "med",  "why": "MSSQL is listening on the network." },
+    { "port": 3306, "service": "mysql",      "sev": "med",  "why": "MySQL is listening on the network." },
+    { "port": 5432, "service": "postgres",   "sev": "med",  "why": "PostgreSQL is listening on the network." },
+    { "port": 5985, "service": "winrm-http", "sev": "med",  "why": "WinRM over HTTP is listening; remote management traffic is unencrypted." },
+    { "port": 5986, "service": "winrm-https","sev": "low",  "why": "WinRM over HTTPS is listening." }
+  ],
+  "remotePorts": [
+    { "port": 4444,  "sev": "high", "why": "Outbound to 4444, the default Metasploit handler port." },
+    { "port": 4445,  "sev": "high", "why": "Outbound to 4445, a common reverse-shell handler port." },
+    { "port": 31337, "sev": "high", "why": "Outbound to 31337, a classic backdoor port." },
+    { "port": 1337,  "sev": "med",  "why": "Outbound to 1337, frequently used by commodity backdoors." },
+    { "port": 6667,  "sev": "med",  "why": "Outbound IRC; some botnets use IRC for command and control." },
+    { "port": 6666,  "sev": "med",  "why": "Outbound to 6666, frequently used by remote-access trojans." },
+    { "port": 1080,  "sev": "med",  "why": "Outbound SOCKS proxy port; could be tunnelling." },
+    { "port": 9050,  "sev": "low",  "why": "Outbound Tor SOCKS port; confirm the anonymiser is sanctioned." },
+    { "port": 5938,  "sev": "low",  "why": "TeamViewer relay port; confirm the remote-access tool is sanctioned." }
+  ],
+  "beacon": {
+    "minConnections": 6,
+    "windowSec": 150,
+    "maxJitter": 0.30,
+    "minMeanSec": 8,
+    "maxMeanSec": 200,
+    "sev": "high"
+  },
+  "fanout": {
+    "distinctHosts": 25,
+    "windowSec": 60,
+    "sev": "high",
+    "browserProcs": ["msedge", "chrome", "firefox", "brave", "opera", "vivaldi", "iexplore"],
+    "browserSev": "low",
+    "browserHosts": 30,
+    "lateralHosts": 4,
+    "lateralSev": "high",
+    "lateralPorts": "135,139,445,3389,5985,5986,22"
+  },
+  "egressWatch": [
+    { "process": "certutil.exe",  "ports": "80,443,8080,8443", "sev": "high", "why": "certutil should not transfer files. -urlcache, -split, -verifyctl and -decode are the documented download and deobfuscation arguments. Capture the destination and the command line." },
+    { "process": "bitsadmin.exe", "ports": "80,443",          "sev": "high", "why": "BITS is a download primitive that can survive reboot and run a notify command. The transfer itself usually runs inside svchost.exe, so also watch BITS-Client job events." },
+    { "process": "mshta.exe",     "ports": "80,443",          "sev": "high", "why": "mshta has no normal reason to reach the internet. Remote HTA content is proxy execution." },
+    { "process": "regsvr32.exe",  "ports": "80,443",          "sev": "high", "why": "regsvr32 fetching a remote scriptlet is the documented squiblydoo pattern." },
+    { "process": "wscript.exe",   "ports": "80,443",          "sev": "med",  "why": "A logon script host opening an internet socket is abnormal outside a managed script window." },
+    { "process": "cscript.exe",   "ports": "80,443",          "sev": "med",  "why": "cscript performing its own download is a scripting-host egress pattern." },
+    { "process": "rundll32.exe",  "ports": "80,443",          "sev": "med",  "why": "rundll32 egress almost always means DLL code with a network role; correlate with the loaded module." },
+    { "process": "msiexec.exe",   "ports": "80,443",          "sev": "med",  "why": "An MSI pulled from the internet and installed quietly." },
+    { "process": "installutil.exe","ports": "80,443",         "sev": "med",  "why": "Managed code running under InstallUtil and beaconing." },
+    { "process": "msbuild.exe",   "ports": "80,443",          "sev": "med",  "why": "MSBuild performing network activity outside a build agent." },
+    { "process": "forfiles.exe",  "ports": "80,443",          "sev": "med",  "why": "forfiles is an indirect-execution wrapper; egress from it or its child is suspicious." },
+    { "process": "pcalua.exe",    "ports": "80,443",          "sev": "med",  "why": "Compatibility Assistant proxy execution with a network leg." },
+    { "process": "cmstp.exe",     "ports": "80,443",          "sev": "med",  "why": "cmstp installing a profile and reaching the network." },
+    { "process": "odbcconf.exe",  "ports": "80,443",          "sev": "med",  "why": "ODBC setup utility loading a DLL that talks to the network." },
+    { "process": "verclsid.exe",  "ports": "80,443",          "sev": "med",  "why": "COM verification host with a network leg." },
+    { "process": "xwizard.exe",   "ports": "80,443",          "sev": "med",  "why": "Wizard host with a network leg." },
+    { "process": "hh.exe",        "ports": "80,443",          "sev": "low",  "why": "Compiled help viewer reaching the network." },
+    { "process": "control.exe",   "ports": "80,443",          "sev": "low",  "why": "Control panel applet with a network leg." },
+    { "process": "wmic.exe",      "ports": "135,49152-65535", "sev": "med",  "why": "wmic toward a peer over RPC is the lateral-movement leg; correlate with 4688 on the target." }
+  ]
+}

@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>NetTruder Site Posture</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <div class="head">
+      <div>
+        <div class="brand">NETTRUDER</div>
+        <div class="sub">SITE POSTURE // READ ONLY</div>
+      </div>
+      <span class="ver">1.4.0</span>
+    </div>
+
+    <div class="actions">
+      <button id="btnRun" class="btn primary">RUN READ-ONLY CHECK</button>
+      <button id="btnHeaders" class="btn">GRANT HEADER READ</button>
+      <button id="btnCopy" class="btn" disabled>COPY REPORT</button>
+    </div>
+
+    <div id="state" class="state">NO DATA // LOCAL ONLY // NO DATA SENT</div>
+    <div id="summary" class="summary"></div>
+
+    <div id="scroll" class="scroll">
+      <div class="sect">
+        <div class="secthead"><span>FINDINGS</span><span id="findCount" class="micro">0</span></div>
+        <div id="findings" class="list"></div>
+      </div>
+
+      <div class="sect">
+        <div class="secthead"><span>SECURITY HEADERS</span><span id="headerState" class="micro">NOT EVALUATED</span></div>
+        <div id="headers" class="list"></div>
+      </div>
+
+      <div class="sect">
+        <div class="secthead"><span>HEADER QUALITY</span><span id="qualityState" class="micro">NOT EVALUATED</span></div>
+        <div id="quality" class="list"></div>
+      </div>
+
+      <div class="sect">
+        <div class="secthead"><span>COOKIE FLAGS</span><span id="cookieFlagState" class="micro">NOT EVALUATED</span></div>
+        <div id="cookieFlagList" class="list"></div>
+      </div>
+
+      <div class="sect">
+        <div class="secthead"><span>LOGIN / AITM INDICATORS</span><span id="loginState" class="micro">NOT EVALUATED</span></div>
+        <div class="field">
+          <label class="lbl" for="trustedHosts">TRUSTED LOGIN HOSTS - EXACT HOSTNAMES</label>
+          <textarea id="trustedHosts" class="txt" spellcheck="false" placeholder="login.example.com"></textarea>
+        </div>
+        <div class="actions compact">
+          <button id="btnSaveTrustedHosts" class="btn">SAVE LOCAL HOST LIST</button>
+        </div>
+        <div id="trustedHostState" class="state small">NO LOCAL HOST LIST // HOST TRUST NOT EVALUATED</div>
+        <div id="loginIndicators" class="list"></div>
+        <div class="note">
+          Passive indicators only. NetTruder does not detect AiTM, cookie theft
+          or MFA bypass from a page read. Confirm with IdP, EDR and proxy logs.
+          Hostnames stay in this browser session; no values are read or sent.
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="secthead"><span>CONTROL ENCOUNTER</span><span id="encCount" class="micro">0</span></div>
+        <div class="controls">
+          <div class="field">
+            <label class="lbl" for="encType">CONTROL TYPE</label>
+            <select id="encType" class="sel">
+              <option value="Image-selection CAPTCHA">IMAGE CAPTCHA</option>
+              <option value="Text CAPTCHA">TEXT CAPTCHA</option>
+              <option value="Bot check">BOT CHECK</option>
+              <option value="Rate limit">RATE LIMIT</option>
+              <option value="Access denied">ACCESS DENIED</option>
+              <option value="Other observed control">OTHER</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="lbl" for="encOutcome">OUTCOME</label>
+            <select id="encOutcome" class="sel">
+              <option value="CHALLENGE OBSERVED">CHALLENGE SHOWN</option>
+              <option value="BLOCKED">BLOCKED</option>
+              <option value="HUMAN PASSED">HUMAN PASSED</option>
+              <option value="ABANDONED">ABANDONED</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions compact">
+          <button id="btnRecordEncounter" class="btn">RECORD ENCOUNTER</button>
+          <button id="btnClearEncounters" class="btn">CLEAR</button>
+        </div>
+        <div id="encounterState" class="state small">NO ENCOUNTERS // MANUAL ONLY</div>
+        <div id="encounters" class="list"></div>
+        <div class="note">
+          Manual evidence only. NetTruder does not solve the challenge, click
+          images, analyse pictures, capture tokens, retry, or change headers,
+          IP or User-Agent. Records stay in this popup until Copy Report;
+          nothing is stored after it closes.
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="secthead"><span>BOUNDARY</span></div>
+        <div class="note">
+          NetTruder injects only its own read-only DOM reader and passively
+          records browser-generated CSP violations and main-frame redirect hosts.
+          It does not run page script text, try a bypass, read browser history,
+          read cookie or token values, or send data anywhere. Header read is
+          optional and must be granted per origin.
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

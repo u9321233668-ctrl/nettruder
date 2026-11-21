@@ -1,0 +1,34 @@
+# Python environment used by the local HEVD source helper. Never commit it.
+research/hevd-source/.venv/
+research/hevd-source/.pytest_cache/
+research/hevd-source/.mypy_cache/
+__pycache__/
+*.pyc
+*.pyo
+
+# Engine runtime data. On a host these live under %LOCALAPPDATA%\NetTruder,
+# but ignore them here too so an accidental run cannot be committed.
+runs/
+audit/
+state/
+lab/
+*.events.ndjson
+*.request.json
+*.stop
+*.pid
+*.lab.out.txt
+*.lab.err.txt
+*.out.txt
+*.err.txt
+markers.log
+
+# Local editor, archive and test artifacts.
+*.tmp
+*.bak
+*.zip
+~$*
+Thumbs.db
+.DS_Store
+
+# Deliberately tracked: research/hevd-source/.gitignore, engine/shim.vbs,
+# engine/invoke.cmd and every file under browser-extension/.

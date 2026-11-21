@@ -1,0 +1,2377 @@
+{
+    "version":  "2026.11.3",
+    "scope":  "Defensive GTFOBins catalog for Linux and Unix. Each entry names the capability and the telemetry that records it. No exploitation syntax, payload, C2 or persistence is included.",
+    "detection":  "Presence is checked only through a readable WSL filesystem. Absence of a readable distribution is reported as not evaluated, never as a clean result.",
+    "techniques":  [
+                       {
+                           "id":  "GTFO-bash",
+                           "name":  "Bash",
+                           "host":  "bash",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Shell escape",
+                           "risk":  "high",
+                           "abuse":  "An interactive shell can be started from a restricted context such as sudo, a service account or a container entrypoint.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected bash invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "bash started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "bash\\s+-i|bash.*\\/dev\\/tcp|bash.*-c",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "bash performs shell escape"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "bash\\s+-i|bash.*\\/dev\\/tcp|bash.*-c"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-sh",
+                           "name":  "POSIX shell",
+                           "host":  "sh",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Shell escape",
+                           "risk":  "high",
+                           "abuse":  "A POSIX shell can be started from an editor, pager, service or restricted wrapper.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected sh invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "sh started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "sh\\s+-i|\\/bin\\/sh\\s+-c",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "sh performs shell escape"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "sh\\s+-i|\\/bin\\/sh\\s+-c"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-awk",
+                           "name":  "AWK",
+                           "host":  "awk",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "high",
+                           "abuse":  "AWK can call system() or pipe to a shell, turning a text filter into command execution.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected awk invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "awk started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "awk.*system\\(|awk.*\\|.*sh",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "awk performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "awk.*system\\(|awk.*\\|.*sh"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-find",
+                           "name":  "Find",
+                           "host":  "find",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "high",
+                           "abuse":  "Find can run -exec on every match, so a file search becomes a command runner.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected find invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "find started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "find.*-exec|find.*-execdir",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "find performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "find.*-exec|find.*-execdir"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-vim",
+                           "name":  "Vim",
+                           "host":  "vim",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Shell escape",
+                           "risk":  "high",
+                           "abuse":  "Vim can start a shell or read and write arbitrary files from its command mode.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected vim invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "vim started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "vim.*-c|vim.*:!|vim.*--cmd",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "vim performs shell escape"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "vim.*-c|vim.*:!|vim.*--cmd"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-less",
+                           "name":  "Less",
+                           "host":  "less",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Shell escape",
+                           "risk":  "med",
+                           "abuse":  "The pager can start a shell or open another file from its interactive prompt.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected less invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "less started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "less.*!|less.*-f",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "less performs shell escape"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "less.*!|less.*-f"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-man",
+                           "name":  "Man",
+                           "host":  "man",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Shell escape",
+                           "risk":  "med",
+                           "abuse":  "The manual pager can start a shell from its prompt, which matters when man runs under sudo.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected man invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "man started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "man.*!|man.*-P",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "man performs shell escape"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "man.*!|man.*-P"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-env",
+                           "name":  "Env",
+                           "host":  "env",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "med",
+                           "abuse":  "Env can run any binary with a modified environment, bypassing a wrapper that only checks the first command.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected env invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "env started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "env.*sh|env.*-i",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "env performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "env.*sh|env.*-i"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-tar",
+                           "name":  "Tar",
+                           "host":  "tar",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "high",
+                           "abuse":  "Tar can run checkpoint actions or a compressor command, so an archive operation becomes execution.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected tar invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "tar started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "tar.*--checkpoint-action|tar.*--to-command|tar.*-I",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "tar performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "tar.*--checkpoint-action|tar.*--to-command|tar.*-I"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-gdb",
+                           "name":  "GDB",
+                           "host":  "gdb",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "high",
+                           "abuse":  "The debugger can run shell commands and attach to processes, which is useful after a restricted shell.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected gdb invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "gdb started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "gdb.*-ex|gdb.*-batch|gdb.*-p",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "gdb performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "gdb.*-ex|gdb.*-batch|gdb.*-p"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-python3",
+                           "name":  "Python 3",
+                           "host":  "python3",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "high",
+                           "abuse":  "Python can run inline code, import modules and open sockets, so a scripting runtime becomes a general executor.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected python3 invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "python3 started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "python3?.*-c|python3?.*-m",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "python3 performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "python3?.*-c|python3?.*-m"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-perl",
+                           "name":  "Perl",
+                           "host":  "perl",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "high",
+                           "abuse":  "Perl can run inline code and system commands from a one-liner.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected perl invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "perl started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "perl.*-e|perl.*-M",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "perl performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "perl.*-e|perl.*-M"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-ruby",
+                           "name":  "Ruby",
+                           "host":  "ruby",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "high",
+                           "abuse":  "Ruby can run inline code and spawn processes from a one-liner.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected ruby invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "ruby started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "ruby.*-e|ruby.*-r",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "ruby performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "ruby.*-e|ruby.*-r"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-nmap",
+                           "name":  "Nmap",
+                           "host":  "nmap",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "high",
+                           "abuse":  "Nmap can run NSE scripts and has an interactive mode, so a scanner can become an executor.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected nmap invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "nmap started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "nmap.*--script|nmap.*--interactive",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "nmap performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "nmap.*--script|nmap.*--interactive"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-socat",
+                           "name":  "Socat",
+                           "host":  "socat",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Network pivot",
+                           "risk":  "high",
+                           "abuse":  "Socat can bridge a socket to a process, creating a relay or a shell channel.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected socat invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "socat started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "socat.*exec|socat.*TCP",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "socat performs network pivot"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "socat.*exec|socat.*TCP"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-nc",
+                           "name":  "Netcat",
+                           "host":  "nc",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Network pivot",
+                           "risk":  "high",
+                           "abuse":  "Netcat can open a listener, connect out, or attach a shell to a socket.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected nc invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "nc started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "nc.*-e|nc.*-l|ncat.*--exec",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "nc performs network pivot"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "nc.*-e|nc.*-l|ncat.*--exec"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-openssl",
+                           "name":  "OpenSSL",
+                           "host":  "openssl",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Network pivot",
+                           "risk":  "med",
+                           "abuse":  "The s_client and s_server modes can carry an interactive session over TLS, bypassing plaintext inspection.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected openssl invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "openssl started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "openssl.*s_client|openssl.*s_server",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "openssl performs network pivot"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "openssl.*s_client|openssl.*s_server"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "443"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-curl",
+                           "name":  "cURL",
+                           "host":  "curl",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Download",
+                           "risk":  "med",
+                           "abuse":  "The client can fetch content to disk or pipe it to a shell.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected curl invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "curl started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "curl.*http.*\\|.*sh|curl.*-o",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "curl performs download"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "curl.*http.*\\|.*sh|curl.*-o"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "80,443,8080,8443"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-wget",
+                           "name":  "Wget",
+                           "host":  "wget",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Download",
+                           "risk":  "med",
+                           "abuse":  "The client can fetch content to disk or pipe it to a shell.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected wget invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "wget started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "wget.*http.*-O|wget.*http.*\\|.*sh",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "wget performs download"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "wget.*http.*-O|wget.*http.*\\|.*sh"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "80,443,8080,8443"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-git",
+                           "name":  "Git",
+                           "host":  "git",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "high",
+                           "abuse":  "Git can run hooks, pagers and transport helpers, so a clone or log can execute code.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected git invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "git started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "git.*core\\.(sshCommand|pager)|git.*-c.*alias",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "git performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "git.*core\\.(sshCommand|pager)|git.*-c.*alias"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-docker",
+                           "name":  "Docker",
+                           "host":  "docker",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Privilege escalation",
+                           "risk":  "high",
+                           "abuse":  "Membership of the docker group is equivalent to root: a container can mount the host filesystem.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected docker invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "docker started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "docker.*run.*-v\\s*\\/|docker.*--privileged",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "docker performs privilege escalation"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "docker.*run.*-v\\s*\\/|docker.*--privileged"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-kubectl",
+                           "name":  "kubectl",
+                           "host":  "kubectl",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Cluster execution",
+                           "risk":  "high",
+                           "abuse":  "Cluster credentials can exec into pods, read secrets and create privileged workloads.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected kubectl invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "kubectl started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "kubectl.*exec|kubectl.*create.*--privileged",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "kubectl performs cluster execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "kubectl.*exec|kubectl.*create.*--privileged"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "443,6443"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-systemctl",
+                           "name":  "systemctl",
+                           "host":  "systemctl",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Privilege escalation",
+                           "risk":  "high",
+                           "abuse":  "The pager and unit-link features can read files or run a binary through a crafted unit.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected systemctl invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "systemctl started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "systemctl.*--pager|systemctl.*link",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "systemctl performs privilege escalation"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "systemctl.*--pager|systemctl.*link"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-journalctl",
+                           "name":  "journalctl",
+                           "host":  "journalctl",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Privilege escalation",
+                           "risk":  "med",
+                           "abuse":  "The pager can start a shell or read files when the journal is viewed as root.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected journalctl invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "journalctl started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "journalctl.*--pager|journalctl.*!",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "journalctl performs privilege escalation"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "journalctl.*--pager|journalctl.*!"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-apt",
+                           "name":  "APT",
+                           "host":  "apt",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Privilege escalation",
+                           "risk":  "high",
+                           "abuse":  "APT hooks and pre-invoke options can run a command as root during a package operation.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected apt invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "apt started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "apt.*Pre-Invoke|apt.*DPkg::Pre",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "apt performs privilege escalation"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "apt.*Pre-Invoke|apt.*DPkg::Pre"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-dpkg",
+                           "name":  "dpkg",
+                           "host":  "dpkg",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Privilege escalation",
+                           "risk":  "med",
+                           "abuse":  "Package unpack and configure hooks can run maintainer scripts as root.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected dpkg invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "dpkg started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "dpkg.*--unpack|dpkg.*--configure",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "dpkg performs privilege escalation"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "dpkg.*--unpack|dpkg.*--configure"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-capsh",
+                           "name":  "capsh",
+                           "host":  "capsh",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Privilege escalation",
+                           "risk":  "med",
+                           "abuse":  "Capability wrappers can start a shell with retained capabilities, bypassing a simple command filter.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected capsh invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "capsh started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "capsh.*--|capsh.*-c",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "capsh performs privilege escalation"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "capsh.*--|capsh.*-c"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-taskset",
+                           "name":  "taskset",
+                           "host":  "taskset",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Privilege escalation",
+                           "risk":  "low",
+                           "abuse":  "A scheduler wrapper can start a command under a different affinity or with inherited privileges.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected taskset invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "taskset started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "taskset.*-c|taskset.*-p",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "taskset performs privilege escalation"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "taskset.*-c|taskset.*-p"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-xargs",
+                           "name":  "xargs",
+                           "host":  "xargs",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "Command execution",
+                           "risk":  "med",
+                           "abuse":  "xargs turns input into a command line, so a filter can run an arbitrary binary.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected xargs invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "xargs started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "xargs.*sh|xargs.*-I",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "xargs performs command execution"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "xargs.*sh|xargs.*-I"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       },
+                       {
+                           "id":  "GTFO-tee",
+                           "name":  "tee",
+                           "host":  "tee",
+                           "path":  "",
+                           "family":  "GTFOBins",
+                           "platform":  "linux",
+                           "group":  "Linux / Unix (GTFOBins)",
+                           "method":  "File write",
+                           "risk":  "med",
+                           "abuse":  "The utility can write to arbitrary files, including cron, sudoers or authorized_keys, when run with privilege.",
+                           "probe":  "Presence only, and only if a WSL distribution is readable. No Linux binary is executed by NetTruder.",
+                           "telemetry":  [
+                                             "Linux auditd execve: process, argv, parent and uid",
+                                             "EDR process telemetry for the binary and its children",
+                                             "sudo and authentication logs for privilege transitions",
+                                             "Network flow if the method downloads or pivots"
+                                         ],
+                           "detection":  "Unexpected tee invocation from a service account, a restricted sudo rule, a container entrypoint or a web shell. A child shell, an outbound connection or a write outside the working directory after the call.",
+                           "hardening":  [
+                                             "Remove unnecessary SUID and SGID bits and file capabilities.",
+                                             "Restrict sudo to exact commands and full paths, never to a general interpreter or pager.",
+                                             "Run services in containers or with a dedicated low-privilege account and a read-only filesystem where possible.",
+                                             "Enable auditd execve rules and forward them; alert on shell children of interpreters, pagers and editors."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "The binary runs outside its normal role",
+                                            "s":  "Invocation",
+                                            "t":  "T1059.004",
+                                            "c":  "",
+                                            "d":  "auditd execve; EDR process",
+                                            "p":  "tee started by a service or restricted user"
+                                        },
+                                        {
+                                            "a":  "The binary performs an action its normal role does not require",
+                                            "s":  "Abuse",
+                                            "t":  "T1059.004",
+                                            "c":  "tee.*\\/etc\\/|tee.*authorized_keys|tee.*cron",
+                                            "d":  "auditd argv; child process; file read or write",
+                                            "p":  "tee performs file write"
+                                        },
+                                        {
+                                            "a":  "A shell, a sensitive file write or a network session follows",
+                                            "s":  "Follow-on",
+                                            "t":  "T1105",
+                                            "c":  "",
+                                            "d":  "auditd; file integrity; network flow",
+                                            "p":  "child shell, file write or outbound flow"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Treat this pattern as a detection lead, not a payload. Confirm the parent, the user and the file or network action that follows.",
+                                       "m":  [
+                                                 "tee.*\\/etc\\/|tee.*authorized_keys|tee.*cron"
+                                             ]
+                                   },
+                           "asr":  [
+
+                                   ],
+                           "net":  {
+                                       "w":  "Watch for a process that normally makes no outbound connection opening a socket after the invocation; correlate with the child process and the destination.",
+                                       "ports":  "any"
+                                   },
+                           "fix":  [
+                                       "Inventory SUID and SGID files and remove the bit where it is not required.",
+                                       "Audit sudoers for interpreter, editor, pager and package-manager entries.",
+                                       "Add auditd execve rules for the binary and alert on shell children.",
+                                       "Use AppArmor or SELinux profiles to confine the binary and its children.",
+                                       "Keep egress monitoring on the host and name the process in the alert."
+                                   ]
+                       }
+                   ]
+}

