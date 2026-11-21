@@ -65,7 +65,7 @@ Five rules govern every module.
 | `engine/NetTruder.ps1` | The engine. Reads a request, performs one action, writes events to an NDJSON file. |
 | `engine/rules.json` | Listener, remote-port and admin-tool egress rules used by IDS/IPS. |
 | `research/` | Defensive catalogs, reports, the source-only HEVD study lab and its helper. |
-| `browser-extension/` | Read-only MV3 page-posture extension. No network code and no automatic bridge. |
+| `browser-extension/` | Read-only MV3 browser extension. No network code and no automatic bridge. |
 | `%LOCALAPPDATA%\NetTruder\` | Runtime data: request files, event streams, stop files, state, audit and lab reports. |
 
 ### The UI path

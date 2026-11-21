@@ -3,7 +3,7 @@
   "name": "NetTruder Site Posture",
   "short_name": "NT Posture",
   "version": "1.4.0",
-  "description": "Read-only defensive page posture checks for NetTruder. Local only; no data is sent anywhere.",
+  "description": "Read-only browser extension for NetTruder. Local only; no data is sent anywhere.",
   "minimum_chrome_version": "102",
   "permissions": [
     "activeTab",

@@ -140,8 +140,8 @@ answer different questions.
 
 ### Optional browser extension
 
-`browser-extension\` contains a read-only Chromium/Edge MV3 extension called
-**NetTruder Site Posture** (v1.4.0). It shows page-level defensive posture:
+`browser-extension\` contains a read-only Chromium/Edge MV3 browser extension
+called **NetTruder Site Posture** (v1.4.0). It shows page-level defensive posture:
 HTTPS state, redacted mixed-content references, form and password-field context,
 visible cookie names, optional security headers, and passive login indicators.
 The login view can use a local, session-only list of exact trusted IdP hostnames
