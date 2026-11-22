@@ -92,6 +92,7 @@ var S = {
     live: false, liveCycle: 0, liveLastStart: 0, pendingSnapshot: false
   },
   pslog: { meta: null, events: [], blocks: [], findings: [], dirty: false },
+  claim: { meta: null, rows: [], findings: [], hidden: [], selected: '', showHidden: false, dirty: false },
   triage: { meta: null, items: [], svcs: [], plan: [], dirty: false },
   av: { meta: null, products: [], events: [], findings: [], dirty: false },
   data: { meta: null, cats: [], files: [], purge: [], findings: [], armed: false, dirty: false },
@@ -360,6 +361,10 @@ function pumpAll() {
         if (el('pslogState')) { el('pslogState').innerHTML = 'FAILED'; }
         if (el('btnPsLogRun')) { el('btnPsLogRun').disabled = false; }
       }
+      if (st.action === 'claimcheck') {
+        if (el('claimState')) { el('claimState').innerHTML = 'FAILED'; }
+        if (el('btnClaimRun')) { el('btnClaimRun').disabled = false; }
+      }
       if (k === 'term') {
         S.termBusy = false;
         if (el('termInput')) { el('termInput').disabled = false; el('termInput').focus(); }
@@ -384,7 +389,7 @@ function stopAllStreams() {
 
 function busy() {
   var keys = ['sweep', 'posture', 'ctl', 'term', 'procs', 'kill', 'research',
-    'flow', 'web', 'code', 'inv', 'triage', 'av', 'data', 'pslog'];
+    'flow', 'web', 'code', 'inv', 'triage', 'av', 'data', 'pslog', 'claim'];
   for (var i = 0; i < keys.length; i++) {
     var st = S.streams[keys[i]];
     if (st && !st.done) { return true; }
@@ -487,6 +492,9 @@ function handleLine(st, raw) {
     case 'pslogevent': if (e.d) { S.pslog.events.push(e.d); S.pslog.dirty = true; } break;
     case 'pslogblock': if (e.d) { S.pslog.blocks.push(e.d); S.pslog.dirty = true; } break;
     case 'pslogfinding': if (e.d) { S.pslog.findings.push(e.d); S.pslog.dirty = true; } break;
+    case 'claimmeta': S.claim.meta = e.d; S.claim.rows = []; S.claim.findings = []; S.claim.hidden = []; S.claim.selected = ''; S.claim.dirty = true; break;
+    case 'claimrow': if (e.d) { S.claim.rows.push(e.d); S.claim.dirty = true; } break;
+    case 'claimfind': if (e.d) { S.claim.findings.push(e.d); S.claim.dirty = true; } break;
     case 'netsample':
       if (e.d) {
         S.net.samples.push(e.d);
@@ -781,6 +789,12 @@ function onDone(st, e) {
       el('pslogState').innerHTML = (e.lvl === 'err') ? 'FAILED' : pslogDoneText(d);
     }
     renderPsLog();
+  }
+  if (d.phase === 'claimcheck') {
+    S.claim.dirty = true;
+    if (el('btnClaimRun')) { el('btnClaimRun').disabled = false; }
+    if (el('claimState')) { el('claimState').innerHTML = (e.lvl === 'err') ? 'FAILED' : claimDoneText(d); }
+    renderClaim();
   }
   if (d.phase === 'flow') {
     S.flow.dirty = true;
@@ -5128,6 +5142,193 @@ function renderPsLog() {
   }
 }
 
+/* ------------------------------- claim check ---------------------------- */
+function claimDoneText(d) {
+  var rows = d.rows || 0;
+  var matches = d.matches || 0;
+  return rows + ' ROW' + (rows === 1 ? '' : 'S') + ' / ' + matches + ' INDICATOR' + (matches === 1 ? '' : 'S');
+}
+
+function claimHiddenIndex(i) {
+  for (var k = 0; k < S.claim.hidden.length; k++) {
+    if (S.claim.hidden[k] === i) { return k; }
+  }
+  return -1;
+}
+
+function runClaimCheck() {
+  if (S.streams.claim && !S.streams.claim.done) {
+    pushConsole('dim', 'CLAIM CHECK is already running.', 'claim');
+    return;
+  }
+  var node = el('claimText');
+  var text = node ? String(node.value || '') : '';
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  if (!text.replace(/\s/g, '')) {
+    pushConsole('warn', 'Paste a claim or article excerpt first. Nothing was sent.', 'claim');
+    return;
+  }
+  if (/password\s*[:=]|passwd\s*[:=]|pwd\s*[:=]|api[ _-]?key\s*[:=]|secret\s*[:=]|token\s*[:=]/i.test(text)) {
+    pushConsole('err', 'Text looks credential-like. Remove passwords, tokens or keys before checking it.', 'claim');
+    return;
+  }
+  if (text.length > 12000) {
+    text = text.substring(0, 12000);
+    pushConsole('warn', 'Claim text truncated to 12000 characters for the local check.', 'claim');
+  }
+  if (node) { node.value = text; }
+  if (el('claimState')) { el('claimState').innerHTML = 'CHECKING'; }
+  if (el('btnClaimRun')) { el('btnClaimRun').disabled = true; }
+  pushConsole('dim', 'Checking wording indicators locally. No lookup, page change or policy change is made.', 'claim');
+  startStream('claim', 'claimcheck', { claimText: text });
+}
+
+function clearClaim() {
+  S.claim = { meta: null, rows: [], findings: [], hidden: [], selected: '', showHidden: false, dirty: false };
+  if (el('claimText')) { el('claimText').value = ''; }
+  if (el('claimState')) { el('claimState').innerHTML = 'NO DATA'; }
+  renderClaim();
+  pushConsole('dim', 'CLAIM CHECK text and in-panel hiding cleared.', 'claim');
+}
+
+function showClaimGuide() {
+  showModal({
+    title: 'CLAIM CHECK GUIDE',
+    kicker: 'INFORMATION INTEGRITY / LOCAL HEURISTICS',
+    sev: 'ok',
+    detail: 'This module finds wording indicators locally. It does not fetch pages, verify facts, decide what is true, or censor anything. Every result is a prompt for human verification.',
+    fix: [
+      'Find the earliest primary source and open the original document.',
+      'Check the publication date and whether old material is being recirculated as new.',
+      'Read laterally: leave the source and compare with independent, credible reporting.',
+      'Separate facts from opinion, satire, edited clips and missing context.',
+      'Use HIDE ROW only to declutter this panel. It changes no page, host, DNS or policy.'
+    ],
+    note: 'Hiding is in-panel and in-memory; a new check clears it. The engine writes its normal local request and event artifacts like other modules, and sends nothing.'
+  });
+}
+
+function showClaimFinding(i) {
+  var f = S.claim.findings[i];
+  if (!f) { return; }
+  var sev = String(f.sev || 'info').toLowerCase();
+  if (sev === 'info') { sev = 'ok'; }
+  showModal({
+    title: f.title || 'CLAIM INDICATOR',
+    kicker: 'STATE: ' + (f.state || 'NOT A TRUTH VERDICT'),
+    sev: sev,
+    detail: f.why || 'Local wording indicator. Verify the claim with primary sources before repeating it.',
+    fix: asTextList(f.fix),
+    note: 'Information-integrity indicator only. A match is not evidence that a claim is false, and no match is not evidence that it is true.'
+  });
+}
+
+function claimRowHtml(r, i) {
+  var h = [];
+  var flags = r.flags || [];
+  var hidden = claimHiddenIndex(i) >= 0;
+  var cls = 'frow claimrow sev-' + esc(sevCls(r.sev || 'info'));
+  if (S.claim.selected === i) { cls += ' active'; }
+  if (hidden && !S.claim.showHidden) { cls += ' claimhidden'; }
+  h.push('<div class="' + cls + '" data-claimrow="' + i + '" title="Click for detail">');
+  h.push('<span class="fsev">' + esc(hevdSevLabel(r.sev || 'info')) + '</span>');
+  h.push('<span class="ftitle">ROW ' + (i + 1) + (hidden ? ' / HIDDEN IN PANEL' : '') + '</span>');
+  h.push('<span class="fdetail">' + esc(r.excerpt || '') + '</span>');
+  if (flags.length) {
+    h.push('<span class="claimflags">');
+    for (var j = 0; j < flags.length; j++) {
+      h.push('<span class="claimflag">' + esc(String(flags[j]).replace('NT-CL-', '')) + '</span>');
+    }
+    h.push('</span>');
+  }
+  h.push('</div>');
+  return h.join('');
+}
+
+function claimDetailHtml() {
+  var r = S.claim.rows[S.claim.selected];
+  if (!r) {
+    return '<div class="empty small">SELECT A ROW TO SEE THE INDICATORS AND VERIFICATION CHECKLIST</div>';
+  }
+  var h = [];
+  var signals = r.signals || [];
+  h.push('<div class="claimdetailhead">ROW ' + (S.claim.selected + 1) + ' / '
+    + esc(hevdSevLabel(r.sev || 'info')) + ' / ' + (r.chars || 0) + ' CHARS'
+    + (claimHiddenIndex(S.claim.selected) >= 0 ? ' / HIDDEN IN THIS PANEL' : '') + '</div>');
+  h.push('<div class="claimexcerpt">' + esc(r.excerpt || '') + '</div>');
+  h.push('<div class="claimdetailhead">LOCAL INDICATORS</div>');
+  if (!signals.length) {
+    h.push('<div class="claimchecklist">NO WORDING INDICATOR MATCHED THIS ROW. THIS IS NOT A TRUTH VERDICT.</div>');
+  } else {
+    h.push('<div class="claimflags">');
+    for (var i = 0; i < signals.length; i++) {
+      h.push('<span class="claimflag">' + esc(signals[i]) + '</span>');
+    }
+    h.push('</div>');
+  }
+  h.push('<div class="claimdetailhead">VERIFICATION CHECKLIST</div>');
+  h.push('<div class="claimchecklist">1. Primary source. 2. Publication date. 3. Lateral reading. 4. Original context. 5. Record uncertainty.</div>');
+  h.push('<div class="claimnote">Indicators can appear in accurate reporting and false claims alike. NetTruder is not an authority on what is true.</div>');
+  return h.join('');
+}
+
+function renderClaim() {
+  S.claim.dirty = false;
+  var m = S.claim.meta || {};
+  var summ = el('claimSumm');
+  if (summ) {
+    if (!S.claim.meta) {
+      summ.className = 'card ressumm';
+      summ.innerHTML = '<span class="rsum dim">NO DATA // LOCAL INDICATORS ONLY // NOT A TRUTH VERDICT</span>';
+    } else {
+      summ.className = 'card ressumm';
+      var out = [];
+      out.push('<span class="rsum good"><b>STATE</b>LOCAL / NO LOOKUPS</span>');
+      out.push('<span class="rsum"><b>ROWS</b>' + (m.rowsShown || 0) + ' / ' + (m.rowsSeen || 0) + '</span>');
+      out.push('<span class="rsum ' + (m.matches ? 'warn' : '') + '"><b>INDICATORS</b>' + (m.matches || 0) + '</span>');
+      out.push('<span class="rsum dim"><b>CHARS</b>' + (m.length || 0) + '</span>');
+      if (m.hash) { out.push('<span class="rsum dim"><b>HASH</b>' + esc(m.hash) + '</span>'); }
+      if (m.textTruncated || m.rowsTruncated) { out.push('<span class="rsum warn"><b>LIMIT</b>INPUT TRUNCATED</span>'); }
+      out.push('<span class="rsum dim"><b>BOUNDARY</b>NOT A TRUTH VERDICT</span>');
+      summ.innerHTML = out.join('');
+    }
+  }
+
+  var rowBox = el('claimRows');
+  if (rowBox) {
+    var shown = 0;
+    var rh = [];
+    for (var i = 0; i < S.claim.rows.length; i++) {
+      if (S.claim.showHidden || claimHiddenIndex(i) < 0) { shown++; }
+      rh.push(claimRowHtml(S.claim.rows[i] || {}, i));
+    }
+    rowBox.innerHTML = rh.length ? rh.join('') : '<div class="empty small">NO ROWS // PASTE TEXT AND RUN CHECK CLAIM</div>';
+    if (el('claimRowCount')) { el('claimRowCount').innerHTML = shown + ' / ' + S.claim.rows.length; }
+    if (el('claimHiddenCount')) { el('claimHiddenCount').innerHTML = S.claim.hidden.length + ' HIDDEN'; }
+    if (el('btnClaimShowHidden')) { el('btnClaimShowHidden').innerHTML = S.claim.showHidden ? 'HIDE HIDDEN' : 'SHOW HIDDEN'; }
+  }
+  var detailBox = el('claimDetail');
+  if (detailBox) { detailBox.innerHTML = claimDetailHtml(); }
+  var findBox = el('claimFindings');
+  if (findBox) {
+    if (!S.claim.findings.length) {
+      findBox.innerHTML = '<div class="empty small">NO FINDINGS // RUN A CHECK TO SEE THE VERIFICATION STEPS</div>';
+    } else {
+      var fh = [];
+      for (var j = 0; j < S.claim.findings.length; j++) {
+        var f = S.claim.findings[j] || {};
+        fh.push('<div class="frow claimfind sev-' + esc(sevCls(f.sev || 'info')) + '" data-claimfind="' + j + '"'
+          + ' title="Click for state and verification steps">'
+          + '<span class="fsev">' + esc(hevdSevLabel(f.sev || 'info')) + '</span>'
+          + '<span class="ftitle">' + esc(f.title || 'CLAIM INDICATOR') + '</span>'
+          + '<span class="fdetail">' + esc(clipText(f.state || '', 130)) + '</span></div>');
+      }
+      findBox.innerHTML = fh.join('');
+    }
+    if (el('claimFindCount')) { el('claimFindCount').innerHTML = String(S.claim.findings.length); }
+  }
+}
+
 /* ------------------------------- onboarding ----------------------------- */
 var VIEW_HINTS = {
   sweep: 'Start here. Derive the local subnet, run a sweep, then select a host and open a finding for remediation.',
@@ -5145,7 +5346,8 @@ var VIEW_HINTS = {
   audit: 'Audit is the local activity record. Exports stay inside the NetTruder data root.',
   research: 'Research groups techniques by platform and class, shows observed blocks and control gaps, and gives remediation for every row.',
   network: 'Network inventories sockets, owners, adapters, routes and cached names. Browser and background flows are separated. Live sampling is bounded and never captures packets.',
-  pslog: 'This read-only view checks Script Block Logging, shows masked 4104 records with the WHO / WHAT / WHERE fields present in each event, and reads explicit PowerShell block events from AppLocker, WDAC/CI and Defender. Click any event for verbose detail; click a finding for state and remediation.'
+  pslog: 'This read-only view checks Script Block Logging, shows masked 4104 records with the WHO / WHAT / WHERE fields present in each event, and reads explicit PowerShell block events from AppLocker, WDAC/CI and Defender. Click any event for verbose detail; click a finding for state and remediation.',
+  claim: 'CLAIM CHECK scores wording indicators locally and never decides what is true. Use the findings as a verification checklist. HIDE ROW only declutters this panel; no page, host or policy is changed.'
 };
 
 var TOUR = [
@@ -5281,7 +5483,7 @@ function onboardAction(act) {
 
 function showView(name) {
   var views = ['sweep', 'ids', 'flow', 'web', 'code', 'threats', 'triage', 'av',
-    'data', 'terminal', 'posture', 'processes', 'audit', 'research', 'network', 'pslog'];
+    'data', 'terminal', 'posture', 'processes', 'audit', 'research', 'network', 'pslog', 'claim'];
   for (var i = 0; i < views.length; i++) {
     var v = el('view-' + views[i]);
     if (v) { v.className = 'view' + (views[i] === name ? ' active' : ''); }
@@ -5309,6 +5511,7 @@ function showView(name) {
   if (name === 'data') { if (S.data.dirty) { renderData(); } }
   if (name === 'network') { if (S.net.dirty) { renderNet(); } }
   if (name === 'pslog') { if (S.pslog.dirty) { renderPsLog(); } }
+  if (name === 'claim') { if (S.claim.dirty) { renderClaim(); } }
   if (name === 'processes') {
     var stale = (new Date().getTime() - S.procStamp) > 30000;
     if (S.procDirty) { renderProcs(); }
@@ -6130,6 +6333,49 @@ function wire() {
     var t = closestAttr(e.target || e.srcElement, 'data-psfind');
     if (!t) { return; }
     pslogFindModal(parseInt(t.getAttribute('data-psfind'), 10));
+  });
+
+  /* CLAIM CHECK (local indicators only) */
+  bind('btnClaimRun', 'onclick', runClaimCheck);
+  bind('btnClaimGuide', 'onclick', showClaimGuide);
+  bind('btnClaimClear', 'onclick', clearClaim);
+  bind('claimText', 'onkeydown', function (ev) {
+    var e = ev || window.event;
+    if (e.keyCode === 13 && e.ctrlKey) { runClaimCheck(); if (e.preventDefault) { e.preventDefault(); } return false; }
+    return true;
+  });
+  bind('claimRows', 'onclick', function (ev) {
+    var e = ev || window.event;
+    var t = closestAttr(e.target || e.srcElement, 'data-claimrow');
+    if (!t) { return; }
+    var ix = parseInt(t.getAttribute('data-claimrow'), 10);
+    if (!isNaN(ix) && S.claim.rows[ix]) { S.claim.selected = ix; renderClaim(); }
+  });
+  bind('claimFindings', 'onclick', function (ev) {
+    var e = ev || window.event;
+    var t = closestAttr(e.target || e.srcElement, 'data-claimfind');
+    if (!t) { return; }
+    showClaimFinding(parseInt(t.getAttribute('data-claimfind'), 10));
+  });
+  bind('btnClaimHide', 'onclick', function () {
+    var ix = S.claim.selected;
+    if (typeof ix !== 'number' || !S.claim.rows[ix]) {
+      pushConsole('warn', 'Select a claim row first.', 'claim');
+      return;
+    }
+    if (claimHiddenIndex(ix) < 0) { S.claim.hidden.push(ix); }
+    renderClaim();
+    pushConsole('dim', 'Row hidden in CLAIM CHECK only. No page, host, DNS or policy was changed.', 'claim');
+  });
+  bind('btnClaimShowHidden', 'onclick', function () {
+    S.claim.showHidden = !S.claim.showHidden;
+    renderClaim();
+  });
+  bind('btnClaimRestore', 'onclick', function () {
+    S.claim.hidden = [];
+    S.claim.showHidden = false;
+    renderClaim();
+    pushConsole('dim', 'All claim rows restored in this panel.', 'claim');
   });
 
   /* triage */

@@ -15,12 +15,13 @@ terminal and a defensible coverage lab that scores whether documented
 living-off-the-land primitives would be detected on this host. Version 1.1.0
 adds a read-only process/data-flow map, a passive web-risk check, a static code
 audit, a read-only threat investigation, a local alert triage board, an endpoint
-block register and read-only data classification with an opt-in purge preview.
+block register, read-only data classification with an opt-in purge preview, and a
+local CLAIM CHECK view for information-integrity indicators.
 
 Nothing in this tool is offensive: there is no C2, no listener, no payload, no
 lateral movement, no credential access and no persistence.
 
-For a module-by-module explanation from SWEEP to PS LOGGING, including the
+For a module-by-module explanation from SWEEP to CLAIM CHECK, including the
 request/event architecture, the defensive review model and the manual browser
 handoff, see `HOW-IT-WORKS.md`. Licensing and third-party provenance are in
 `LICENSE` and `THIRD-PARTY-NOTICES.md`.
@@ -47,8 +48,8 @@ out. Live rows and findings depend on the host and the run.
 ## Read this first
 
 - **Read-only by default.** Scanning, the posture probe, the IDS and the 1.1.0
-  analysis views (flow, web, code, threats, triage, exposure and data check)
-  never change the system.
+  analysis views (flow, web, code, threats, triage, exposure, data check and
+  claim check) never change the system.
 - **It never weakens security.** It does not touch Defender, the firewall
   profile, Windows Update, services, drivers, scheduled tasks or existing rules.
   It makes no service startup changes, no telemetry reduction, no page-file or
@@ -714,6 +715,32 @@ and forwarding advice. Attribution is limited to what the source recorded;
 `NOT RECORDED` is shown when a field is absent. A captured line or block event is
 defensive evidence, not a verdict about intent.
 
+### 17 - CLAIM CHECK
+
+A local information-integrity aid for security awareness. Paste a headline, post
+or short article excerpt and press **CHECK CLAIM**. The engine splits it into
+rows and scores explainable wording indicators: urgency or sharing pressure, no
+attribution marker, absolute certainty, inflammatory wording, link shorteners,
+all-caps emphasis and no date marker. It makes **no network call**, opens no page
+or URL, reads no history and changes no host, DNS, browser or policy setting.
+
+Each row shows a masked excerpt and its indicator labels. **HIDE ROW** hides that
+row only inside the CLAIM CHECK panel; the hide list is held in memory, and a new
+check clears it. **SHOW HIDDEN** and **RESTORE ALL** only affect this panel. No
+page, host, DNS, policy or security control is changed, and nothing is sent
+anywhere. The engine writes its normal local request and event artifacts for the
+run, like other modules.
+
+Findings carry state and a verification checklist: find the primary source,
+check the publication date, read laterally, restore the original context and
+record uncertainty. An indicator can appear in accurate reporting, satire and
+false claims alike. NetTruder is **not a truth authority** and never censors or
+automatically hides anything outside its own panel.
+
+CLI use is `-Action claimcheck -ClaimText <text>`. Credential-like text is
+refused, the input is capped at 12000 characters, and excerpts are masked before
+they enter the event stream.
+
 ---
 
 ## Data locations
@@ -780,18 +807,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\engine\NetTruder.ps1 -Acti
 powershell -NoProfile -ExecutionPolicy Bypass -File .\engine\NetTruder.ps1 -Action netinv -RunId t15
 powershell -NoProfile -ExecutionPolicy Bypass -File .\engine\NetTruder.ps1 -Action netinv -RunId t16 -SampleSec 30 -IntervalSec 2
 powershell -NoProfile -ExecutionPolicy Bypass -File .\engine\NetTruder.ps1 -Action datapurge -RunId t17
+powershell -NoProfile -ExecutionPolicy Bypass -File .\engine\NetTruder.ps1 -Action claimcheck -RunId t18 -ClaimText "BREAKING: share now before it is too late. According to the original report, ..."
 ```
 
 Actions: `status`, `probe`, `rules`, `scan`, `watch`, `block`, `unblock`,
 `release`, `expire`, `shell`, `processes`, `kill`, `research`, `webscan`,
 `codeaudit`, `flow`, `investigate`, `netinv`, `triage`, `av`, `datacheck`,
-`datapurge`, `pslog`.
+`datapurge`, `pslog`, `claimcheck`.
 
 Useful switches: `-AllowPublic`, `-AutoBlock`, `-Yes` (LAN block confirmation,
 process termination, marker-probe consent and purge), `-AckRisk` (required with
 `-Yes` for purge), `-RetentionDays 30`, `-ProcId`, `-Url`, `-Path`,
 `-Ports "22,80,443,8000-8100"`, `-TimeoutMs 400`, `-Probes`, `-LabDir <path>`,
-`-SampleSec`, `-IntervalSec`, `-MaxFlows`.
+`-SampleSec`, `-IntervalSec`, `-MaxFlows`, `-ClaimText`.
 `datapurge` previews with no switches; it only deletes with `-Yes -AckRisk`.
 
 Read the stream from PowerShell:
@@ -856,7 +884,8 @@ Run on the test host after the rename and the new modules landed:
 | Data purge preview | 0 files, 0 bytes, nothing deleted |
 | Web - live loopback | 9 findings, grade D, HTTP 200 |
 | Web - refused target | 1 finding (`NT-WEB-000`), grade n/a |
-| Engine/UI event kinds | 52 handled, 0 unhandled |
+| Claim check - local text | 4 rows, 7 indicator matches, no lookups |
+| Engine/UI event kinds | 70 handled, 0 unhandled |
 | Console script | JS parse OK, CSS braces balanced, sources ASCII |
 
 Validation artifacts: `nw-jsparse.js` under a local test harness folder and the

@@ -492,7 +492,7 @@ Linux/Unix; a recorded block is positive control evidence and never upgrades a
 coverage gap to `OK`.
 
 Supporting smoke results: status `migrated:41`, `adminGroup:true`,
-`tokenElevated:false`; 52 engine/UI event kinds handled and 0 unhandled; JS
+`tokenElevated:false`; 70 engine/UI event kinds handled and 0 unhandled; JS
 parse OK; CSS braces balanced; all sources ASCII-only. Validation artifacts are
 `nw-jsparse.js` and the pre-rename backup `netwatch-pre-nettruder.zip`, both
 kept in a local test harness folder outside this repository.

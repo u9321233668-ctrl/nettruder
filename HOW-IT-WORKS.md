@@ -1,7 +1,7 @@
 # NetTruder - How It Works
 
 This document explains what NetTruder does, module by module from `01 SWEEP` to
-`16 PS LOGGING`, and how the pieces fit together. `README.md` is the launch and
+`17 CLAIM CHECK`, and how the pieces fit together. `README.md` is the launch and
 quick-reference guide; `BEST-PRACTICES.md` is the operator guide. This document
 is the architecture and behaviour reference.
 
@@ -111,7 +111,8 @@ The engine works without the UI. Either write a request file and call
 `engine\invoke.cmd request.json`, or call `NetTruder.ps1` directly with
 parameters such as `-Action status`, `-Action scan -Targets 192.168.1.0/24`,
 `-Action codeaudit -Path <folder>`, `-Action research`, `-Action webscan -Url
-<loopback URL>`, `-Action pslog` or `-Action datapurge`. The action list is in
+<loopback URL>`, `-Action pslog`, `-Action claimcheck -ClaimText <text>` or
+`-Action datapurge`. The action list is in
 `README.md`. The event stream can be read with `Get-Content ... |
 ConvertFrom-Json`, and a run can be stopped by creating its `.stop` file. The
 CLI is how the engine is validated without relying on a WSH-launched window.
@@ -435,6 +436,29 @@ logging is off, inaccessible or empty, the UI shows the Group Policy path and
 forwarding advice. A captured line or block event is defensive evidence, not a
 verdict about intent.
 
+### 17 - CLAIM CHECK
+
+A local-only information-integrity view. `CHECK CLAIM` sends pasted text through
+the same request/event path as other modules. The engine splits it into sentence
+or line rows and applies local regular expressions for urgency or sharing
+pressure, absent source markers, absolute certainty, inflammatory wording,
+shortened links, all-caps emphasis and absent date markers. The text is not
+fetched from anywhere, no URL is opened, no history is read, and no DNS, host,
+browser, policy or security-control state is changed.
+
+Rows show masked excerpts and indicator labels. The excerpt masks emails, URLs,
+digits and credential-like assignments before it is written to the local event
+stream. Hiding a row adds its index to an in-memory list in this panel only;
+`SHOW HIDDEN` reveals those rows and `RESTORE ALL` clears the list. A new check
+starts with an empty hide list. There is no blocklist export, no page alteration
+and no automatic censorship.
+
+Findings carry state plus a verification checklist: primary source, publication
+date, lateral reading, original context and explicit uncertainty. This is an
+awareness aid, not a truth service. Indicators appear in accurate reporting and
+false claims alike, so a match is not proof of falsehood and no match is not a
+clean result.
+
 ---
 
 ## 5. Browser extension and manual handoff
@@ -541,6 +565,8 @@ Known limits:
   been performed in this environment.
 - The catalogs are a starting point, not a complete inventory of every public
   technique.
+- CLAIM CHECK uses wording heuristics. It cannot verify truth, detect every
+  manipulated item or replace primary-source research.
 
 ---
 

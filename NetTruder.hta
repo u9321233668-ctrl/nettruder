@@ -59,6 +59,7 @@
         <button class="nav" data-view="research"><span class="navi">14</span><span class="navt">RESEARCH</span></button>
         <button class="nav" data-view="network"><span class="navi">15</span><span class="navt">NETWORK</span></button>
         <button class="nav" data-view="pslog"><span class="navi">16</span><span class="navt">PS LOGGING</span></button>
+        <button class="nav" data-view="claim"><span class="navi">17</span><span class="navt">CLAIM CHECK</span></button>
       </div>
       <div class="railblock">
         <div class="railk">SCOPE</div>
@@ -697,6 +698,52 @@
             <div class="cardhead"><span>STATE AND REMEDIATION</span><span class="micro" id="pslogFindCount">0</span></div>
             <div class="scroll pad" id="pslogFindings">
               <div class="empty small" id="pslogFindEmpty">NO STATE FINDINGS // RUN THE READOUT</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================= CLAIM CHECK ========================= -->
+      <div class="view" id="view-claim">
+        <div class="card claiminputcard">
+          <div class="cardhead"><span>CLAIM TEXT</span><span class="micro accent">LOCAL ONLY // NO LOOKUPS</span></div>
+          <div class="claiminputbody">
+            <textarea id="claimText" class="claimtext" spellcheck="false" placeholder="Paste a headline, post, or short article excerpt here..."></textarea>
+            <div class="hint">Maximum 12000 characters. Do not paste passwords, tokens or private data. Indicators are not a truth verdict.</div>
+          </div>
+        </div>
+        <div class="row actions">
+          <button id="btnClaimRun" class="btn primary">CHECK CLAIM</button>
+          <button id="btnClaimGuide" class="btn">GUIDE</button>
+          <button id="btnClaimHide" class="mini">HIDE ROW</button>
+          <button id="btnClaimShowHidden" class="mini">SHOW HIDDEN</button>
+          <button id="btnClaimRestore" class="mini">RESTORE ALL</button>
+          <button id="btnClaimClear" class="mini danger">CLEAR</button>
+          <div class="grow"></div>
+          <span class="micro" id="claimState">NO DATA</span>
+        </div>
+        <div class="card ressumm" id="claimSumm">
+          <span class="rsum dim">NO DATA // LOCAL INDICATORS ONLY // NOT A TRUTH VERDICT</span>
+        </div>
+        <div class="split grow">
+          <div class="claimstreams">
+            <div class="card claimstream">
+              <div class="cardhead"><span>ROWS / CLICK FOR DETAIL</span><span class="micro" id="claimRowCount">0 / 0</span></div>
+              <div class="scroll" id="claimRows">
+                <div class="empty small" id="claimEmpty">PASTE TEXT AND PRESS CHECK CLAIM</div>
+              </div>
+            </div>
+            <div class="card claimstream">
+              <div class="cardhead"><span>INDICATORS AND VERIFICATION CHECKLIST</span><span class="micro" id="claimHiddenCount">0 HIDDEN</span></div>
+              <div class="scroll pad" id="claimDetail">
+                <div class="empty small">SELECT A ROW TO SEE THE LOCAL INDICATORS</div>
+              </div>
+            </div>
+          </div>
+          <div class="card claimside">
+            <div class="cardhead"><span>STATE AND NEXT CHECKS</span><span class="micro" id="claimFindCount">0</span></div>
+            <div class="scroll pad" id="claimFindings">
+              <div class="empty small" id="claimFindEmpty">NO FINDINGS // RUN A CHECK</div>
             </div>
           </div>
         </div>

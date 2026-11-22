@@ -78,7 +78,8 @@ local only.
 | **Data check / purge preview** | `-Action datacheck` / `datapurge` | 356 files / 1 finding; preview 0 files, 0 bytes, nothing deleted |
 | **Web - loopback** | `-Action webscan` | 9 findings, grade D, HTTP 200 |
 | **Web - refused target** | `-Action webscan` | 1 finding (`NT-WEB-000`), grade n/a |
-| **Engine/UI event kinds** | event dispatch smoke | 52 handled, 0 unhandled |
+| **Claim check** | `-Action claimcheck` | 4 rows, 7 indicator matches, no lookups |
+| **Engine/UI event kinds** | event dispatch smoke | 70 handled, 0 unhandled |
 
 Posture output on the test host:
 
@@ -561,7 +562,7 @@ bypass, obfuscation or evasion is attempted. The lab exports
 
 ### 12.8 Validation
 
-- Engine and UI event kinds: 52 handled, 0 unhandled.
+- Engine and UI event kinds: 70 handled, 0 unhandled.
 - `ui\app.js` parses (JS parse OK), CSS braces balance and all sources are
   ASCII-only.
 - Validation artifacts: `nw-jsparse.js` in a local test harness folder and the

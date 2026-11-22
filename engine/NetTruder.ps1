@@ -15,7 +15,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('status', 'probe', 'rules', 'scan', 'watch', 'block', 'unblock', 'release', 'expire', 'shell', 'processes', 'kill', 'research', 'webscan', 'codeaudit', 'coderead', 'codewrite', 'flow', 'investigate', 'netinv', 'triage', 'av', 'datacheck', 'datapurge', 'pslog')]
+    [ValidateSet('status', 'probe', 'rules', 'scan', 'watch', 'block', 'unblock', 'release', 'expire', 'shell', 'processes', 'kill', 'research', 'webscan', 'codeaudit', 'coderead', 'codewrite', 'flow', 'investigate', 'netinv', 'triage', 'av', 'datacheck', 'datapurge', 'pslog', 'claimcheck')]
     [string]$Action = 'status',
 
     [string]$RequestFile = '',
@@ -40,6 +40,7 @@ param(
     [string]$Decision = '',
     [int]$Hours = 72,
     [int]$RetentionDays = 30,
+    [string]$ClaimText = '',
     [switch]$IncludeAudit,
     [switch]$AckRisk,
     [switch]$Probes,
@@ -76,6 +77,7 @@ if (-not [string]::IsNullOrWhiteSpace($RequestFile) -and (Test-Path -LiteralPath
         if ($null -ne $req.query) { $Query = [string]$req.query }
         if ($null -ne $req.itemId) { $ItemId = [string]$req.itemId }
         if ($null -ne $req.decision) { $Decision = [string]$req.decision }
+        if ($null -ne $req.claimText) { $ClaimText = [string]$req.claimText }
         if ($null -ne $req.hours) { $Hours = [int]$req.hours }
         if ($null -ne $req.retentionDays) { $RetentionDays = [int]$req.retentionDays }
         if ($null -ne $req.includeAudit) { $IncludeAudit = [bool]$req.includeAudit }
@@ -90,7 +92,7 @@ if (-not [string]::IsNullOrWhiteSpace($RequestFile) -and (Test-Path -LiteralPath
         Remove-Item -LiteralPath $RequestFile -Force -ErrorAction SilentlyContinue
     } catch { }
 }
-$allowedActions = @('status', 'probe', 'rules', 'scan', 'watch', 'block', 'unblock', 'release', 'expire', 'shell', 'processes', 'kill', 'research', 'webscan', 'codeaudit', 'coderead', 'codewrite', 'flow', 'investigate', 'netinv', 'triage', 'av', 'datacheck', 'datapurge', 'pslog')
+$allowedActions = @('status', 'probe', 'rules', 'scan', 'watch', 'block', 'unblock', 'release', 'expire', 'shell', 'processes', 'kill', 'research', 'webscan', 'codeaudit', 'coderead', 'codewrite', 'flow', 'investigate', 'netinv', 'triage', 'av', 'datacheck', 'datapurge', 'pslog', 'claimcheck')
 if ($allowedActions -notcontains $Action) { $Action = 'status' }
 
 $ErrorActionPreference = 'Continue'
@@ -5231,6 +5233,190 @@ function Invoke-PsLog {
     }
 }
 
+function Get-ClaimHash {
+    param([string]$Text)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($Text)
+        return ([System.BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').Substring(0, 16)
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Get-ClaimExcerpt {
+    param([string]$Text, [int]$Max = 180)
+    $s = [regex]::Replace($Text, '\s+', ' ')
+    $s = [regex]::Replace($s, '(?i)\b(password|passwd|pwd|api[ _-]?key|secret|token)\s*[:=]\s*\S+', '[REDACTED]')
+    $s = [regex]::Replace($s, '(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b', '[EMAIL]')
+    $s = [regex]::Replace($s, '(?i)\bhttps?://\S+', '[URL]')
+    $s = [regex]::Replace($s, '\b\d+\b', '#')
+    $s = $s.Trim()
+    if ($s.Length -gt $Max) { $s = $s.Substring(0, $Max) + '...' }
+    return $s
+}
+
+function Get-ClaimRank {
+    param([string]$Sev)
+    switch ($Sev) {
+        'high' { return 3 }
+        'med' { return 2 }
+        'low' { return 1 }
+        default { return 0 }
+    }
+}
+
+function Get-ClaimLevel {
+    param([string]$Sev)
+    if ($Sev -eq 'high') { return 'err' }
+    if ($Sev -eq 'med') { return 'warn' }
+    return 'info'
+}
+
+function Invoke-ClaimCheck {
+    $rawLength = ([string]$ClaimText).Length
+    if ([string]::IsNullOrWhiteSpace($ClaimText)) {
+        Write-Evt 'log' 'err' 'Claim text is empty. Paste text into CLAIM CHECK or use -ClaimText.'
+        Write-Evt 'done' 'err' 'Claim check had no text.' @{ phase = 'claimcheck'; rows = 0; findings = 0 }
+        return
+    }
+    if ([regex]::IsMatch($ClaimText, '(?i)\b(password|passwd|pwd|api[ _-]?key|secret|token)\s*[:=]\s*\S+')) {
+        Write-Evt 'log' 'err' 'Text looks credential-like. Remove secrets before running CLAIM CHECK.'
+        Write-Evt 'done' 'err' 'Claim check refused credential-like text.' @{ phase = 'claimcheck'; rows = 0; findings = 0 }
+        return
+    }
+
+    $text = [string]$ClaimText
+    $textTruncated = $false
+    if ($text.Length -gt 12000) {
+        $text = $text.Substring(0, 12000)
+        $textTruncated = $true
+    }
+    $hash = Get-ClaimHash -Text $text
+
+    $parts = @($text -split '\r?\n+')
+    if ($parts.Count -eq 1) { $parts = @($text -split '(?<=[.!?])\s+') }
+    $rows = @()
+    foreach ($p in $parts) {
+        $line = ([string]$p).Trim()
+        if ($line) { $rows += $line }
+    }
+    if ($rows.Count -eq 0) {
+        Write-Evt 'log' 'err' 'Claim text had no usable rows.'
+        Write-Evt 'done' 'err' 'Claim check had no usable text.' @{ phase = 'claimcheck'; rows = 0; findings = 0 }
+        return
+    }
+    $seenRows = $rows.Count
+    $rowTruncated = $false
+    if ($rows.Count -gt 80) {
+        $rows = @($rows | Select-Object -First 80)
+        $rowTruncated = $true
+    }
+
+    $verifyFix = @(
+        'Find the earliest primary source: original report, court document, dataset, statement or named author.',
+        'Check the publication date and whether the text is old material recirculated as new.',
+        'Read laterally: leave the page and see how independent, credible sources describe the same claim.',
+        'Separate verified facts from interpretation, satire, opinion and edited or missing context.',
+        'Record uncertainty. An indicator is a prompt to check, not a verdict about truth.'
+    )
+    $indicators = @(
+        @{ id = 'NT-CL-URG'; label = 'Urgency / sharing pressure'; sev = 'med'; rx = '(?i)\b(breaking|urgent|shocking|act now|share now|before it is too late|must see|you will not believe|do not miss)\b'; why = 'Urgency and sharing pressure can outpace verification and is common in manipulated posts.'; fix = $verifyFix },
+        @{ id = 'NT-CL-NOSRC'; label = 'No attribution marker'; sev = 'med'; rx = '(?i)\b(according to|reported by|said in a statement|source:|study|official|department|court|document|published)\b'; why = 'A long claim with no named source marker needs extra lateral reading before it is repeated.'; fix = $verifyFix },
+        @{ id = 'NT-CL-ABS'; label = 'Absolute certainty'; sev = 'med'; rx = '(?i)\b(always|never|everyone|nobody|100%|guaranteed|definitely|proven|undeniably)\b'; why = 'Absolute wording is not proof of falsehood, but it often hides nuance or missing qualifiers.'; fix = $verifyFix },
+        @{ id = 'NT-CL-EMO'; label = 'Inflammatory wording'; sev = 'med'; rx = '(?i)\b(terrifying|disgusting|traitor|evil|destroy|collapse|catastrophe|outrage|hateful)\b'; why = 'Strong emotional language can be a signal to slow down and check the original context.'; fix = $verifyFix },
+        @{ id = 'NT-CL-LINK'; label = 'Link shortener'; sev = 'low'; rx = '(?i)\b(bit\.ly|tinyurl|t\.co|goo\.gl|ow\.ly|is\.gd)\b'; why = 'A shortened link hides the destination until it is opened. Do not open unexpected links from an untrusted message.'; fix = $verifyFix },
+        @{ id = 'NT-CL-CAPS'; label = 'All-caps emphasis'; sev = 'low'; rx = '\b[A-Z]{4,}\b'; why = 'Repeated all-caps words can be emphasis, quoting or manipulation. Check the source before reacting.'; fix = $verifyFix },
+        @{ id = 'NT-CL-NODATE'; label = 'No date marker'; sev = 'low'; rx = '(?i)\b(today|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|(19|20)\d{2})\b'; why = 'No date marker was found. Old claims are often resurfaced without their original date.'; fix = $verifyFix }
+    )
+
+    $counts = @{}
+    foreach ($ind in $indicators) { $counts[$ind.id] = 0 }
+    $rowData = New-Object System.Collections.ArrayList
+    $totalMatches = 0
+
+    for ($i = 0; $i -lt $rows.Count; $i++) {
+        $row = $rows[$i]
+        $flags = @()
+        $signals = @()
+        $rank = 0
+        foreach ($ind in $indicators) {
+            $hit = $false
+            if ($ind.id -eq 'NT-CL-CAPS') {
+                $hit = @([regex]::Matches($row, $ind.rx)).Count -ge 2
+            } elseif ($ind.id -eq 'NT-CL-NOSRC') {
+                $hit = ($row.Length -ge 60) -and (-not [regex]::IsMatch($row, $ind.rx))
+            } elseif ($ind.id -eq 'NT-CL-NODATE') {
+                $hit = ($row.Length -ge 60) -and (-not [regex]::IsMatch($row, $ind.rx))
+            } else {
+                $hit = [regex]::IsMatch($row, $ind.rx)
+            }
+            if ($hit) {
+                $flags += $ind.id
+                $signals += $ind.label
+                $counts[$ind.id] = [int]$counts[$ind.id] + 1
+                $totalMatches++
+                $rr = Get-ClaimRank -Sev $ind.sev
+                if ($rr -gt $rank) { $rank = $rr }
+            }
+        }
+        $rowSev = 'info'
+        if ($rank -ge 3) { $rowSev = 'high' }
+        elseif ($rank -eq 2) { $rowSev = 'med' }
+        elseif ($rank -eq 1) { $rowSev = 'low' }
+        [void]$rowData.Add(@{
+            index = ($i + 1)
+            chars = [int]$row.Length
+            sev = $rowSev
+            flags = $flags
+            signals = $signals
+            excerpt = Get-ClaimExcerpt -Text $row -Max 180
+        })
+    }
+
+    Write-Audit 'claimcheck' 'Local claim indicator review' @{
+        length = [int]$rawLength
+        hash = $hash
+        rows = [int]$seenRows
+        matches = [int]$totalMatches
+        textTruncated = [bool]$textTruncated
+        rowsTruncated = [bool]$rowTruncated
+    }
+    Write-Evt 'claimmeta' 'ok' 'Local claim indicators complete - not a truth verdict' @{
+        length = [int]$rawLength
+        analyzed = [int]$text.Length
+        hash = $hash
+        rowsSeen = [int]$seenRows
+        rowsShown = [int]$rowData.Count
+        matches = [int]$totalMatches
+        textTruncated = [bool]$textTruncated
+        rowsTruncated = [bool]$rowTruncated
+        method = 'Local regex heuristics only. No network call, page read, DNS change, host change or policy change.'
+        caveat = 'Indicators are prompts for verification, not a verdict about truth. This tool is not an authority on what is true.'
+        generated = [string](Get-Date).ToString('o')
+    }
+    foreach ($r in $rowData) { Write-Evt 'claimrow' 'info' '' $r }
+
+    foreach ($ind in $indicators) {
+        $count = [int]$counts[$ind.id]
+        $state = $(if ($count -gt 0) { $count.ToString() + ' MATCH(ES) / INDICATOR ONLY' } else { 'NO MATCH IN THIS TEXT' })
+        $sev = $(if ($count -gt 0) { $ind.sev } else { 'info' })
+        Write-Evt 'claimfind' (Get-ClaimLevel -Sev $sev) $ind.title @{
+            id = $ind.id; title = $ind.title; sev = $sev; state = $state
+            why = $ind.why; fix = $ind.fix; control = 'INFORMATION INTEGRITY'; matches = $count
+        }
+    }
+    Write-Evt 'claimfind' 'info' 'Claim check is not a truth verdict' @{
+        id = 'NT-CL-VERDICT'; title = 'Indicators only - verify with primary sources'; sev = 'info'
+        state = 'LOCAL HEURISTICS / NOT A TRUTH VERDICT'
+        why = 'Pattern matches can occur in accurate reporting, satire, quoted material and false claims alike.'
+        fix = $verifyFix; control = 'INFORMATION INTEGRITY'; matches = 0
+    }
+    Write-Evt 'done' 'ok' ('Claim check - rows=' + [string]$rowData.Count + ' - matches=' + [string]$totalMatches) @{
+        phase = 'claimcheck'; rows = [int]$rowData.Count; findings = (($indicators.Count) + 1); matches = [int]$totalMatches
+    }
+}
+
 # ---------------------------------------------------------------------------
 # Dispatch
 # ---------------------------------------------------------------------------
@@ -5323,5 +5509,6 @@ switch ($Action) {
     'datacheck' { Invoke-DataCheck }
     'datapurge' { Invoke-DataPurge }
     'pslog' { Invoke-PsLog }
+    'claimcheck' { Invoke-ClaimCheck }
 }
 

@@ -2452,6 +2452,99 @@ textarea.sitereport:focus { outline: none; border-color: #35f0a0; }
 ::-webkit-scrollbar-thumb { background: #17262f; border: 2px solid #050a0e; }
 ::-webkit-scrollbar-thumb:hover { background: #22353f; }
 
+/* ---------- CLAIM CHECK (local information-integrity indicators) ---------- */
+#view-claim { overflow-x: hidden; overflow-y: auto; -ms-overflow-style: scrollbar; }
+.card.claiminputcard { flex: 0 0 auto; height: 150px; margin-bottom: 0; }
+.card.claiminputcard .cardhead { flex: 0 0 26px; height: 26px; }
+.claiminputbody { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; padding: 7px; }
+textarea.claimtext {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 54px;
+  padding: 5px 6px;
+  border: 1px solid #24414e;
+  background: #05090d;
+  color: #bcd2de;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+  resize: none;
+  -ms-overflow-style: scrollbar;
+}
+textarea.claimtext:focus { outline: none; border-color: #35f0a0; }
+.card.claiminputcard .hint { flex: 0 0 auto; margin-top: 4px; }
+#view-claim .split.grow { flex: 1 1 auto; min-height: 0; }
+#view-claim .card > .scroll { flex: 1 1 0%; min-height: 0; }
+.claimstreams {
+  display: flex;
+  -ms-flex: 55 1 0%;
+  flex: 55 1 0%;
+  width: 0;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  margin-right: 10px;
+  overflow: hidden;
+}
+.card.claimstream {
+  display: flex;
+  -ms-flex: 1 1 0%;
+  flex: 1 1 0%;
+  min-height: 0;
+  flex-direction: column;
+}
+.card.claimstream + .card.claimstream { margin-top: 8px; }
+.card.claimstream > .scroll { -ms-flex: 1 1 0%; flex: 1 1 0%; min-height: 0; }
+.card.claimside {
+  display: flex;
+  -ms-flex: 45 1 0%;
+  flex: 45 1 0%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+.card.claimside > .scroll { padding: 7px; }
+.card.claimside .cardhead { flex: 0 0 26px; height: 26px; }
+.claimrow { cursor: pointer; }
+.claimrow.active { border-color: #35f0a0; background: #0e1a22; }
+.claimrow.claimhidden { opacity: 0.55; }
+.claimfind { cursor: pointer; }
+.claimflags { display: block; margin-top: 4px; }
+.claimflag {
+  display: inline-block;
+  margin: 2px 4px 0 0;
+  padding: 2px 5px;
+  border: 1px solid #24414e;
+  background: #08121a;
+  color: #8fb7c9;
+  font-size: 9px;
+  letter-spacing: 0.10em;
+}
+.claimdetailhead {
+  margin: 6px 0 4px;
+  color: #6f8796;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+.claimexcerpt {
+  padding: 8px;
+  border: 1px solid #16242e;
+  border-left: 3px solid #38bdf8;
+  background: #080f15;
+  color: #c6dce8;
+  font-size: 11px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.claimchecklist {
+  padding: 6px 8px;
+  border: 1px solid #16242e;
+  background: #0a1218;
+  color: #a9c6d4;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.claimnote { margin-top: 6px; color: #6f8796; font-size: 10px; line-height: 1.4; }
+
 /* ---------- small screens ---------- */
 @media (max-width: 1200px) {
   #rail { width: 148px; flex-basis: 148px; }
@@ -2473,15 +2566,20 @@ textarea.sitereport:focus { outline: none; border-color: #35f0a0; }
   .resdcol { flex: 1 1 auto; border-right: 0; border-bottom: 1px solid #101a22; }
   .asrguid { flex: 0 0 200px; }
   .card.flowside, .card.webside, .card.codeside, .card.invside,
-  .card.triageside, .card.avside, .card.dataside, .card.pslogside { width: auto; flex: 1 1 auto; min-height: 120px; }
+  .card.triageside, .card.avside, .card.dataside, .card.pslogside, .card.claimside { width: auto; flex: 1 1 auto; min-height: 120px; }
   .card.flowside > .scroll, .card.webside > .scroll, .card.codeside > .scroll,
   .card.invside > .scroll, .card.triageside > .scroll, .card.avside > .scroll,
-  .card.dataside > .scroll, .card.pslogside > .scroll { max-height: 220px; }
+  .card.dataside > .scroll, .card.pslogside > .scroll, .card.claimside > .scroll { max-height: 220px; }
   #view-pslog .split.grow { flex: 0 0 auto; min-height: 0; }
   #view-pslog .pslogstreams { flex: 0 0 auto; margin-right: 0; margin-bottom: 8px; }
   #view-pslog .card.pslogstream { flex: 0 0 180px; height: 180px; min-height: 180px; }
   #view-pslog .card.pslogstream > .scroll { flex: 1 1 0%; height: 150px; min-height: 0; max-height: none; }
   #view-pslog .card.pslogside { flex: 1 1 0; max-height: 260px; }
+  #view-claim .split.grow { flex: 0 0 auto; min-height: 0; }
+  #view-claim .claimstreams { flex: 0 0 auto; margin-right: 0; margin-bottom: 8px; }
+  #view-claim .card.claimstream { flex: 0 0 180px; height: 180px; min-height: 180px; }
+  #view-claim .card.claimstream > .scroll { flex: 1 1 0%; height: 150px; min-height: 0; max-height: none; }
+  #view-claim .card.claimside { flex: 1 1 0; max-height: 260px; }
   #view-network .split.netgraphs, #view-network .split.nettables { flex: 0 0 auto; min-height: 0; margin-bottom: 8px; }
   #view-network .split.netgraphs .card, #view-network .split.nettables .card {
     -ms-flex: 1 1 auto;
@@ -2517,6 +2615,8 @@ textarea.sitereport:focus { outline: none; border-color: #35f0a0; }
   #view-code .split.grow { flex: 0 0 20%; min-height: 140px; max-height: 190px; }
   #view-pslog .split.grow { flex: 1 1 0%; min-height: 220px; }
   #view-pslog .card.pslogstream { min-height: 120px; }
+  #view-claim .split.grow { flex: 1 1 0%; min-height: 220px; }
+  #view-claim .card.claimstream { min-height: 120px; }
   #codeDetail { height: auto; max-height: none; min-height: 360px; }
   #sessionCard { max-height: 210px; }
 }
@@ -2538,6 +2638,8 @@ textarea.sitereport:focus { outline: none; border-color: #35f0a0; }
   #view-code .split.grow { flex: 0 0 auto; min-height: 140px; }
   #view-pslog .split.grow { flex: 1 1 0%; min-height: 190px; }
   #view-pslog .card.pslogstream { min-height: 100px; }
+  #view-claim .split.grow { flex: 1 1 0%; min-height: 190px; }
+  #view-claim .card.claimstream { min-height: 100px; }
   #codeDetail { flex: 0 0 460px; height: auto; max-height: none; min-height: 420px; }
   .idehits { max-height: 44px; }
   .idedetail { width: 280px; flex-basis: 280px; }
@@ -2563,6 +2665,8 @@ textarea.sitereport:focus { outline: none; border-color: #35f0a0; }
   #view-code .split.grow { flex: 0 0 auto; min-height: 110px; }
   #view-pslog .split.grow { flex: 1 1 0%; min-height: 160px; }
   #view-pslog .card.pslogstream { min-height: 90px; }
+  #view-claim .split.grow { flex: 1 1 0%; min-height: 160px; }
+  #view-claim .card.claimstream { min-height: 90px; }
   #codeDetail { flex: 0 0 400px; height: auto; max-height: none; min-height: 360px; }
   .idehits { max-height: 38px; }
   .idedetail { width: 240px; flex-basis: 240px; }
