@@ -20,7 +20,9 @@ credential access or persistence anywhere in the folder.
   analysis views never change the system.
 - **It never weakens security.** It does not touch Defender, the firewall
   profile, Windows Update, services, drivers, scheduled tasks or existing rules.
-  There is no AV bypass and no payload.
+  There is no payload and no machine-wide policy change. Per-process
+  `-ExecutionPolicy Bypass` and hidden launchers are disclosed in `README.md`;
+  no AV exclusion is added and no control is disabled.
 - **State changes need consent.** Blocking, process termination and data purge
   each require an explicit, logged, opt-in action.
 - **Actions are bounded and reversible.** Blocks expire; code edits are backed
@@ -48,7 +50,7 @@ everything an operator does with it.
 | Reversibility | `RELEASE ALL` removes NetTruder rules; code edits are backed up; legacy state is copied, never moved. |
 | Auditability | Every security-relevant action is appended to an NDJSON audit log. |
 | Honest evidence | A gap label describes missing visibility, not a clean host or a compromised one. |
-| No bypass | A blocked test is recorded as a control success; no evasion is attempted. |
+| Honest launch chain | The hidden per-process worker and WSH shim are documented. A blocked test is a control success; no exclusion, policy change or re-enabling is attempted. |
 | Local-only | No remote agent, no inbound listener, no data sent anywhere. |
 | Source-only review | Code, driver source and crash-dump commands are read or copied, never executed by NetTruder. |
 
@@ -139,6 +141,29 @@ Other evidence rules worth keeping:
 - A captured script-block line is defensive evidence, not a verdict about
   intent.
 
+**Decision discipline — how not to make a blind call:**
+
+- Separate three things before you act: what was observed, what it suggests and
+  what you decide to do. Report the first, label the second, and only make the
+  third when the basis is stated.
+- Never promote `BLIND`, `NOT EVALUATED`, `CONTENT GAP`, a filtered token or a
+  refusal into a clean result. They mean "not seen here", not "not there", and
+  not "compromised".
+- Do not treat a configuration reading as a measured event, or a single event
+  as a configuration fact. POSTURE reads policy; RESEARCH tries to prove that
+  policy produced telemetry. When they disagree, say so and investigate scope.
+- Prefer two independent signals before an irreversible action. A finding plus
+  a corroborating event is stronger than either alone; one triage signal is a
+  reason to look, not to block or terminate.
+- State the source and time of every claim. "The policy reads on" and "a 4104
+  event was observed" are different sentences with different confidence.
+- Ask what would falsify the conclusion. If nothing could, it is a belief, not
+  evidence. Record the alternative explanation you ruled out.
+- Do not let silence become a verdict. An unreadable log, a blocked probe or an
+  unavailable host produces absence of evidence, not evidence of absence.
+- Escalate instead of guessing. If the basis is missing, write `NOT EVALUATED`
+  and go and get the missing signal.
+
 ---
 
 ## 6. Change control and remediation
@@ -155,6 +180,45 @@ Other evidence rules worth keeping:
   `-AckRisk` and is limited to NetTruder-owned runs, snapshots and optionally
   old audit files. Personal files are never in scope.
 - To remove all traces: `RELEASE ALL`, then delete `%LOCALAPPDATA%\NetTruder`.
+
+A sound remediation follows the same order every time:
+
+1. **Preserve the evidence first.** Save the report, run id, event stream and
+   audit entries with a hash before changing anything. Remediation destroys the
+   state you just measured.
+2. **Name the exact gap and the exact target.** "Enable script block logging on
+   host X through GPO Y" is actionable; "improve security" is not.
+3. **Check the blast radius.** Inventory dependencies, affected users and legacy
+   workflows. Section 15 shows why a control that looks purely beneficial can
+   also stop a legitimate tool.
+4. **Test in audit or monitor mode first.** AppLocker, WDAC and Defender ASR
+   should observe before they enforce. Review the events, then move to block
+   mode. That applies to preventive policy; the IPS is explicit, temporary
+   containment, not a preventive policy change.
+5. **Use the native management path.** Group Policy, Intune, `secpol.msc` or the
+   product console. NetTruder copies steps to the clipboard; reading, pasting
+   and running them are yours. Never paste an unreviewed string.
+6. **Make it reversible.** Record the previous value, the owner, the change id
+   and the rollback. Temporary blocks keep an expiry. Prefer a narrow, logged
+   exception over a global change; never disable a control to make a tool work.
+7. **Verify with a different signal.** Re-run POSTURE for state and RESEARCH for
+   telemetry. If the policy reads on but no event appears, the change is not
+   verified.
+8. **Close the loop.** Attach before/after evidence to the change record, note
+   what stayed `BLIND`, and review after the next policy cycle.
+
+What not to do:
+
+- Do not remediate from a single finding, a severity colour or a score. Those
+  rank review order, not certainty.
+- Do not equate "the block fired" with "the remediation worked". A block is a
+  control result; the underlying weakness may still be present.
+- Do not weaken a control to remove a finding, add a global AV exclusion, or
+  re-enable a disabled script host just to keep a tool running.
+- Do not run a copyable script without reading every line, including paths,
+  account scope and any `reg add` or `Add-MpPreference` values.
+- Do not treat one tool's output as authoritative for another product's state.
+  Correlate with EDR, SIEM and the native console.
 
 ---
 
@@ -191,9 +255,13 @@ Group Policy, your management tooling or the native Windows UI.
 | SMBv1 | Disabled | Removes a legacy lateral-movement path. |
 | RDP inbound | Restricted / disabled unless needed | Reduces exposed management surface. |
 | BitLocker and Windows Update | On / current | Protects data at rest and closes known vulnerabilities. |
+| Windows Script Host | Disabled where `.vbs`/`.js`/`.hta` are not needed | Removes a common script-execution path; inventory dependencies first. |
+| `mshta.exe` / `.hta` | Blocked with AppLocker or WDAC where not needed | Disabling WSH alone does **not** stop HTA scripts. |
 
 Controls that are safer when off are labelled that way in the UI and open
-review steps; NetTruder never turns a control off for you.
+review steps; NetTruder never turns a control off for you. For the scope and
+limits of WSH/HTA policy, including the fact that NetTruder's own console
+depends on that chain, see section 15.
 
 ---
 
@@ -377,6 +445,45 @@ limits and the hardening checklist, see
 `research/AITM-PHISHING-SESSION-HIJACK.md`. Both notes are defensive only: they
 map techniques, state what an extension can and cannot imply, and give review
 questions without install or bypass detail.
+
+---
+
+## 15. Windows Script Host and HTA as machine policy
+
+Disabling WSH is a legitimate hardening control (CISA **CM0078**, MITRE ATT&CK
+**T1059.007**). Set `Enabled = 0` under
+`HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings`, and the per-user and
+Wow6432Node keys where applicable, or enforce it with AppLocker or WDAC. The
+expected refusal is `Windows Script Host access is disabled on this machine`.
+It is appropriate on hosts that do not need `.vbs`, `.js`, `.wsf` or HTA
+content.
+
+**It is not complete on its own.** The `Enabled` value stops `wscript.exe` and
+`cscript.exe`; it does not stop `mshta.exe`, which hosts HTA documents and can
+still run VBScript/JScript. Treat them as separate controls (CISA **CM0005**,
+MITRE **T1218.005**): deny `mshta.exe` with AppLocker or WDAC, block `.hta` at
+the mail gateway, change the `.hta` association if it is not needed, and monitor
+process creation and command lines for attempts. A block is the result, not a
+coverage pass.
+
+Rollout order:
+
+1. Inventory actual use of `.vbs`, `.js`, `.hta`, logon scripts and internal
+   tools. CISA notes that some update and recovery flows may depend on WSH.
+2. Run AppLocker/WDAC in audit mode and review the events first.
+3. Enforce through Group Policy or management tooling with a change record.
+4. Keep 4688 / Sysmon 1 monitoring; a policy is not evidence that nothing was
+   attempted.
+
+**NetTruder dependency.** Its UI chain is
+`mshta -> wscript -> shim.vbs -> powershell.exe`. Disabling WSH or blocking
+`mshta` will stop the console from opening. That is a valid control result. Do
+not re-enable WSH, change `.hta` associations or add an exclusion to make the
+window appear. Use the CLI path, or an approved host where the chain is already
+permitted. A tool availability problem is not a reason to weaken the host.
+
+Reference guidance: CISA CM0078 and CM0005, MITRE ATT&CK T1059.007 and
+T1218.005, and Microsoft's *Understand App Control script enforcement*.
 
 ---
 

@@ -21,16 +21,20 @@ Nothing here changes a security setting, and nothing here is an attack tool.
   and `markers.log` under `%LOCALAPPDATA%\NetTruder\lab`.
 - No payloads, no shellcode, no download cradle, no C2, no listener, no
   persistence, no credential access, no privilege escalation.
-- No obfuscation, no encoded arguments, no hidden windows and no process
-  injection in the probes.
+- No obfuscation, no encoded arguments and no process injection in the probes.
+  Marker probes are ordinary scripts with visible arguments. The lab script
+  itself is started as a hidden, short-lived PowerShell worker by
+  `engine\NetTruder.ps1`; that is a launch characteristic, not a probe
+  capability, and it is documented in `HOW-IT-WORKS.md`.
 - Marker probes only append a line to a log and exit. They require both
   `-RunMarkerProbes` and `-Yes`.
 - The tool never disables Defender, the firewall, Windows Update, services,
   drivers or scheduled tasks. It makes no service startup changes, no telemetry
   reduction, no page-file or network-stack tweaks and no personal-file deletion.
 - A blocked test is recorded as a positive control result in `blocks.json` and
-  `BLOCKED-TESTS.md`. No bypass, obfuscation or evasion is attempted, and a block
-  is never treated as a coverage pass. There is no AV bypass workflow.
+  `BLOCKED-TESTS.md`, never as a coverage pass. No workflow disables, excludes
+  or re-enables a control to defeat a block. The one WSH shim is documented
+  console plumbing, not a reusable evasion kit.
 
 If you want to test a technique that is not covered here, add it to
 `techniques.json` with an **inert** probe and document the expected telemetry
@@ -53,7 +57,9 @@ open on that host, and that is a valid control result. Record it, compare the
 host with POSTURE / RESEARCH on an approved host, and use the five next paths in
 `BEST-PRACTICES.md` section 13. Do not re-enable WSH, change `.hta`
 associations, or call the engine directly just to get around the refusal. See
-`BLOCKED-TESTS.md` section 10 for the evidence template.
+`BLOCKED-TESTS.md` section 10 for the evidence template. Disabling WSH stops
+`wscript`/`cscript` but not `mshta.exe`, so a complete machine policy blocks HTA
+separately; see `BEST-PRACTICES.md` section 15.
 
 ## Files
 

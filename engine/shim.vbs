@@ -1,7 +1,7 @@
 ' NetTruder engine shim.
 ' Spawns one hidden, short-lived PowerShell worker for a single request file.
 ' The console never launches PowerShell directly; it writes a JSON request and
-' calls this shim, which keeps the parent/child chain inside WSH + cmd.
+' calls this shim, which keeps the parent/child chain as mshta -> wscript -> PowerShell.
 Option Explicit
 
 Dim fso, sh, here, req, cmd

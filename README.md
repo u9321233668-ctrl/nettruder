@@ -53,9 +53,15 @@ out. Live rows and findings depend on the host and the run.
 - **It never weakens security.** It does not touch Defender, the firewall
   profile, Windows Update, services, drivers, scheduled tasks or existing rules.
   It makes no service startup changes, no telemetry reduction, no page-file or
-  network-stack tweaks and no personal-file deletion. There is no AV bypass and
-  no payload, C2, persistence, credential access, obfuscation, hidden window or
-  evasion primitive anywhere in the folder.
+  network-stack tweaks and no personal-file deletion. There is no payload, C2,
+  persistence, credential access or machine-wide policy change, and no encoded
+  or obfuscated command. The engine and its launchers do use **per-process,
+  non-persistent** `-ExecutionPolicy Bypass` and `-WindowStyle Hidden` flags, and
+  the HTA path is `mshta -> wscript -> shim.vbs -> powershell.exe`: a launch-chain
+  workaround adopted after a direct HTA-to-PowerShell launch was refused on a
+  hardened host. No AV exclusion is added, no control is disabled and WSH is
+  never re-enabled. If any link in the chain is blocked, NetTruder records the
+  exact message and stops. See "Why there is a `shim.vbs`" below.
 - **The IPS only creates its own rules**, named `NetTruder-IPS-<ip>-in` and
   `NetTruder-IPS-<ip>-out`. Every rule has an expiry and is removed automatically.
 - **Blocking requires administrator.** Without elevation the IPS refuses and
@@ -125,6 +131,12 @@ PowerShell worker. That is a normal parent/child chain and needs no policy
 change. **Do not disable or whitelist your antivirus to make this run.** If the
 shim is blocked too, the console says so in the CONSOLE pane and refuses to
 pretend it worked.
+
+The hidden worker and per-process `-ExecutionPolicy Bypass` are the price of that
+chain; they change no machine policy. The strongest host hardening — disabling
+WSH and blocking `wscript`/`mshta` — will also stop NetTruder's UI. That is a
+valid control result, not a reason to weaken the host. See `BEST-PRACTICES.md`
+section 15.
 
 ### If the launch chain is blocked
 
@@ -623,9 +635,12 @@ result. `PSLOG` on the summary strip is the **PowerShell event channel**, not
 the script-block policy; the policy has its own control row and finding.
 
 Research stays defensive: the catalogs describe documented behaviour, detections
-and hardening. There are no payloads, C2, persistence, credential access,
-obfuscation, hidden windows or evasion. A blocked test is a positive result and
-is recorded in `research\BLOCKED-TESTS.md`; no bypass is attempted.
+and hardening. There are no payloads, C2, persistence, credential access or
+encoded/obfuscated commands. The research lab is started as a hidden,
+short-lived PowerShell worker (see `engine\NetTruder.ps1`), and the launch chain
+above applies to it too; that is a UI and launch characteristic, not a covert
+capability. A blocked test is a positive result and is recorded in
+`research\BLOCKED-TESTS.md`; no control is disabled and no bypass is attempted.
 
 ### 15 - NETWORK
 
@@ -899,6 +914,7 @@ See `RESEARCH.md` section 12 for the full read-out.
 | Symptom | Cause | Fix |
 |---|---|---|
 | `Engine launch blocked: ... [code -2147024671]` | Endpoint agent refused the shim launch | Run `Launch.cmd` from the folder; if it persists, ask IT to review the script-launch policy. Do not disable protection. |
+| `Windows Script Host access is disabled on this machine` | WSH `Enabled=0` policy on this host | Keep it disabled. Use the CLI path or an approved host where the chain is permitted; record it as a valid control result. Do not re-enable WSH or add an exclusion. |
 | `No response from the engine after 20s` | Engine never started, or the folder is incomplete | Confirm `engine\NetTruder.ps1` and `engine\shim.vbs` exist. Run `-Action status` by hand. |
 | `IPS needs an elevated session` | Console started without admin | Close it and run `Launch-Elevated.cmd`. |
 | Session says `admin account / filtered token` but proof says Security log unreadable | The account is in Administrators but UAC gave this process a filtered token (`tokenElevated=no`, `integrity=medium`) | This is UAC working as designed. Close NetTruder and run `Launch-Elevated.cmd` as administrator, then re-run the inventory. Click the ELEVATION card in proof for the exact remediation. Never disable UAC. |

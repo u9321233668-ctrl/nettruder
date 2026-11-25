@@ -79,7 +79,11 @@ Five rules govern every module.
    `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File NetTruder.ps1 -RequestFile <file>`.
    The shim exists because a direct HTA-to-PowerShell launch was refused on a
    hardened host in testing. It is a normal parent/child chain and needs no
-   policy change.
+   policy change. The hidden window and per-process execution-policy flag are
+   launch characteristics, not machine-wide changes. Disabling WSH or blocking
+   `mshta` is sound host hardening and will also stop this chain; that is a
+   valid control result, not a reason to weaken the host. See
+   `BEST-PRACTICES.md` section 15.
 3. The engine reads the request, deletes the request file, and performs one
    action. It writes ASCII-escaped NDJSON events to
    `%LOCALAPPDATA%\NetTruder\runs\<id>.events.ndjson`: one JSON object per line.

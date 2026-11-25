@@ -512,7 +512,9 @@ engine actions are `status`, `probe`, `rules`, `scan`, `watch`, `block`,
 The safety boundary is unchanged: no Defender/firewall/Update/service/driver/
 task weakening, no service startup changes, no telemetry reduction, no page-file
 or network-stack tweaks, no personal-file deletion, no payloads/C2/persistence/
-credential access/obfuscation/hidden windows/evasion, and no AV bypass.
+credential access or encoded/obfuscated commands, and no machine-wide policy
+change. The documented hidden, per-process launcher and its WSH shim are
+disclosed in `README.md`; no exclusion is added and no control is disabled.
 
 ### 12.3 Web-scan honesty
 
