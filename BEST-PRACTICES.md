@@ -51,6 +51,7 @@ everything an operator does with it.
 | Auditability | Every security-relevant action is appended to an NDJSON audit log. |
 | Honest evidence | A gap label describes missing visibility, not a clean host or a compromised one. |
 | Honest launch chain | The hidden per-process worker and WSH shim are documented. A blocked test is a control success; no exclusion, policy change or re-enabling is attempted. |
+| Means, not dependency | The healthiest outcome for a security tool is being unnecessary on a well-configured machine. A control that stops NetTruder is a success, not a reason to weaken the host. |
 | Local-only | No remote agent, no inbound listener, no data sent anywhere. |
 | Source-only review | Code, driver source and crash-dump commands are read or copied, never executed by NetTruder. |
 
@@ -343,6 +344,14 @@ happen when Windows Script Host is disabled, `.hta` is blocked or unassociated,
 or the `mshta -> wscript -> PowerShell` chain is refused. This is a control
 success and a research result, not a broken program. The UI is unavailable on
 that host; the project is not.
+
+The ideal end state is that this host no longer needs NetTruder at all. The tool
+teaches the questions — what policy says, what telemetry proves, what a refusal
+looks like — so the operator can answer them natively and finish without it. A
+block is a *control* success, but not a *measurement* success: record what could
+not be observed as `NOT EVALUATED` and get that evidence from native logs, EDR
+or an approved host where the chain is permitted. Never let "the control worked"
+become "we know everything is fine".
 
 Do not change `WSH Settings\Enabled`, `DisableWindowsScriptHost`, AppLocker,
 WDAC, Defender ASR, `.hta` associations, endpoint exclusions or firewall
